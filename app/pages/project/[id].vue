@@ -22,10 +22,16 @@ const {
   selectedFileContent,
   loadingFileContent,
   selectedFileComments,
+  viewedFiles,
   closeOverlay,
   addComment,
   deleteComment,
+  toggleViewed,
 } = useChanges();
+
+const isSelectedFileViewed = computed(() =>
+  selectedFile.value ? viewedFiles.value.has(selectedFile.value) : false,
+);
 </script>
 
 <template>
@@ -80,7 +86,9 @@ const {
       :file-content="selectedFileContent"
       :loading-content="loadingFileContent"
       :comments="selectedFileComments"
+      :viewed="isSelectedFileViewed"
       @close="closeOverlay"
+      @toggle-viewed="toggleViewed(selectedFile!)"
       @add-comment="addComment($event)"
       @delete-comment="deleteComment($event)"
     />

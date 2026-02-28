@@ -232,6 +232,56 @@ export function useChanges() {
     closeOverlay();
   }
 
+  // Generate a default commit message from the changed files
+  const commitMessage = computed(() => {
+    const modified = files.value.filter((f) => f.status === "M").map((f) => f.path.split("/").pop());
+    const added = files.value.filter((f) => f.status === "A" || f.status === "?").map((f) => f.path.split("/").pop());
+    const deleted = files.value.filter((f) => f.status === "D").map((f) => f.path.split("/").pop());
+
+    const total = files.value.length;
+    if (total === 0) return "";
+
+    const lines = [`Update ${total} file${total !== 1 ? "s" : ""}`];
+    if (modified.length) lines.push(`\nModified: ${modified.join(", ")}`);
+    if (added.length) lines.push(`Added: ${added.join(", ")}`);
+    if (deleted.length) lines.push(`Deleted: ${deleted.join(", ")}`);
+
+    return lines.join("\n");
+  });
+
+  // Commit all changes
+  const committing = ref(false);
+  const commitError = ref<string | null>(null);
+
+  async function commit(message: string) {
+    const id = projectId.value;
+    if (!id || !message.trim()) return false;
+
+    committing.value = true;
+    commitError.value = null;
+
+    try {
+      await $fetch(`/api/projects/${id}/commit`, {
+        method: "POST",
+        body: { message: message.trim() },
+      });
+
+      // Reset state after successful commit
+      viewedFiles.value = new Set();
+      selectedFile.value = null;
+      selectedFileContent.value = null;
+      await fetchChanges();
+
+      return true;
+    } catch (e: any) {
+      console.error("[changes] Commit failed:", e);
+      commitError.value = e.data?.message || e.message || "Failed to commit";
+      return false;
+    } finally {
+      committing.value = false;
+    }
+  }
+
   // Initialize when project changes
   function init() {
     const id = projectId.value;
@@ -262,6 +312,9 @@ export function useChanges() {
     selectedFileDiff,
     selectedFileComments,
     unresolvedComments,
+    commitMessage,
+    committing,
+    commitError,
 
     // Actions
     fetchChanges,
@@ -272,6 +325,7 @@ export function useChanges() {
     selectFile,
     closeOverlay,
     requestChanges,
+    commit,
     init,
   };
 }

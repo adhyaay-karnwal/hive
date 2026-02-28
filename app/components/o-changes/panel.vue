@@ -3,14 +3,27 @@ const {
   files,
   viewedFiles,
   selectedFile,
+  comments,
   unresolvedComments,
   loading,
+  commitMessage,
+  committing,
+  commitError,
   selectFile,
   toggleViewed,
   requestChanges,
+  commit,
   fetchChanges,
   init,
 } = useChanges();
+
+function stageAll() {
+  const newSet = new Set(viewedFiles.value);
+  for (const f of files.value) {
+    newSet.add(f.path);
+  }
+  viewedFiles.value = newSet;
+}
 
 // Initialize on mount
 onMounted(() => init());
@@ -23,7 +36,6 @@ watch(() => route.params.id, () => init());
 const projectId = computed(() => (route.params.id as string) || null);
 const store = useHiveStore();
 
-// Track agent working state reactively
 const agentWorking = computed(() => {
   if (!projectId.value) return false;
   const { isWorking } = store.project(projectId.value);
@@ -32,7 +44,6 @@ const agentWorking = computed(() => {
 
 watch(agentWorking, (working, wasWorking) => {
   if (wasWorking && !working) {
-    console.log("[changes] Agent finished, refreshing changes...");
     fetchChanges();
   }
 });
@@ -43,11 +54,6 @@ onKeyStroke("Escape", () => {
     selectedFile.value = null;
   }
 });
-
-async function handleApprove() {
-  // TODO: implement commit flow
-  console.log("[changes] Approve & commit — not yet implemented");
-}
 </script>
 
 <template>
@@ -56,11 +62,16 @@ async function handleApprove() {
     :viewed-files="viewedFiles"
     :selected-file="selectedFile"
     :comment-count="unresolvedComments.length"
+    :comments="comments"
     :loading="loading"
+    :default-commit-message="commitMessage"
+    :committing="committing"
+    :commit-error="commitError"
     @select-file="selectFile"
     @toggle-viewed="toggleViewed"
+    @stage-all="stageAll"
     @request-changes="requestChanges"
-    @approve="handleApprove"
+    @commit="commit($event)"
     @refresh="fetchChanges"
   />
 </template>

@@ -4,6 +4,8 @@ import { TooltipProvider } from "reka-ui";
 
 const route = useRoute();
 const hasProjectOpen = computed(() => !!route.params.id);
+const { selectedFile } = useChanges();
+const isDiffOpen = computed(() => !!selectedFile.value);
 </script>
 
 <template>
@@ -32,6 +34,7 @@ const hasProjectOpen = computed(() => !!route.params.id);
 
     <div class="flex min-h-0 flex-1 gap-1 px-1 pb-1">
       <aside
+        v-show="!isDiffOpen"
         class="bg-base-1 flex w-60 shrink-0 flex-col rounded-lg ring-1 ring-edge"
       >
         <OSidebar />

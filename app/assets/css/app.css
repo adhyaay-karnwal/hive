@@ -24,24 +24,25 @@
   --accent-c: 0.18;
 
   /* ── Control ── */
-  --dir: -1; /* light mode: surfaces darken to elevate */
+  color-scheme: dark;
+  --dir: 1; /* dark mode forced: surfaces lighten to elevate */
   --contrast: 1;
 
-  /* ── Edge alpha (per-scheme) ── */
-  --edge-alpha: 0.12;
-  --edge-alpha-subtle: 0.06;
-  --edge-alpha-strong: 0.2;
+  /* ── Edge alpha ── */
+  --edge-alpha: 0.08;
+  --edge-alpha-subtle: 0.04;
+  --edge-alpha-strong: 0.14;
 
   /* ── Base level offsets from seed ── */
-  --base-0-offset: 0.08;
-  --base-1-offset: 0.03;
-  --base-3-offset: -0.015;
+  --base-0-offset: 0.12;
+  --base-1-offset: 0.02;
+  --base-3-offset: -0.03;
 
   /* ── Surface steps per base ── */
-  --surface-step-on-0: 0.035;
-  --surface-step-on-1: 0.035;
-  --surface-step-on-2: 0.035;
-  --surface-step-on-3: 0.035;
+  --surface-step-on-0: 0.14;
+  --surface-step-on-1: 0.065;
+  --surface-step-on-2: 0.05;
+  --surface-step-on-3: 0.04;
 
   /* ── Fallback for elements not inside a base-* class ── */
   --surface-1: var(--surface-step-on-2);
@@ -49,39 +50,40 @@
   --surface-3: calc(var(--surface-step-on-2) * 3);
 
   /* ── Composed seed colors ── */
-  --seed: oklch(0.985 var(--seed-c) var(--seed-h));
-  --accent: oklch(0.55 var(--accent-c) var(--accent-h));
+  --seed: oklch(0.15 var(--seed-c) var(--seed-h));
+  --accent: oklch(0.7 var(--accent-c) var(--accent-h));
 
   /* ── Inherited context ── */
   --base: var(--seed);
 
   /* ── Intent seeds ── */
-  --danger: oklch(0.55 0.2 25);
-  --warn: oklch(0.75 0.15 85);
-  --success: oklch(0.55 0.17 155);
+  --danger: oklch(0.7 0.18 25);
+  --warn: oklch(0.8 0.14 85);
+  --success: oklch(0.7 0.15 155);
 }
 
-@media (prefers-color-scheme: dark) {
+/* Light mode values — preserved for future theme toggle support
+@media (prefers-color-scheme: light) {
   :root {
-    color-scheme: dark;
-    --dir: 1;
-    --edge-alpha: 0.08;
-    --edge-alpha-subtle: 0.04;
-    --edge-alpha-strong: 0.14;
-    --base-0-offset: 0.12;
-    --base-1-offset: 0.02;
-    --base-3-offset: -0.03;
-    --surface-step-on-0: 0.14;
-    --surface-step-on-1: 0.065;
-    --surface-step-on-2: 0.05;
-    --surface-step-on-3: 0.04;
-    --seed: oklch(0.15 var(--seed-c) var(--seed-h));
-    --accent: oklch(0.7 var(--accent-c) var(--accent-h));
-    --danger: oklch(0.7 0.18 25);
-    --warn: oklch(0.8 0.14 85);
-    --success: oklch(0.7 0.15 155);
+    --dir: -1;
+    --edge-alpha: 0.12;
+    --edge-alpha-subtle: 0.06;
+    --edge-alpha-strong: 0.2;
+    --base-0-offset: 0.08;
+    --base-1-offset: 0.03;
+    --base-3-offset: -0.015;
+    --surface-step-on-0: 0.035;
+    --surface-step-on-1: 0.035;
+    --surface-step-on-2: 0.035;
+    --surface-step-on-3: 0.035;
+    --seed: oklch(0.985 var(--seed-c) var(--seed-h));
+    --accent: oklch(0.55 var(--accent-c) var(--accent-h));
+    --danger: oklch(0.55 0.2 25);
+    --warn: oklch(0.75 0.15 85);
+    --success: oklch(0.55 0.17 155);
   }
 }
+*/
 
 @theme {
   /* ── Fonts ── */

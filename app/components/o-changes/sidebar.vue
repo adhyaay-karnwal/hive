@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import {
-  DocumentCheckIcon,
-  DocumentIcon,
   ArrowPathIcon,
   ChatBubbleLeftIcon,
   CheckCircleIcon,
+  CheckIcon,
+  PlusIcon,
+  DocumentIcon,
+  ChevronDoubleDownIcon,
 } from "@heroicons/vue/16/solid";
 
 type ChangedFile = {
@@ -12,19 +14,30 @@ type ChangedFile = {
   status: string;
 };
 
+type ChangeComment = {
+  id: string;
+  filePath: string;
+  resolved: boolean;
+};
+
 type Props = {
   files: ChangedFile[];
   viewedFiles: Set<string>;
   selectedFile: string | null;
   commentCount: number;
+  comments: ChangeComment[];
   loading: boolean;
+  defaultCommitMessage: string;
+  committing: boolean;
+  commitError: string | null;
 };
 
 type Emits = {
   "select-file": [path: string];
   "toggle-viewed": [path: string];
+  "stage-all": [];
   "request-changes": [];
-  "approve": [];
+  "commit": [message: string];
   refresh: [];
 };
 
@@ -33,10 +46,51 @@ const {
   viewedFiles,
   selectedFile = null,
   commentCount = 0,
+  comments = [],
   loading = false,
+  defaultCommitMessage = "",
+  committing = false,
+  commitError = null,
 } = defineProps<Props>();
 
 const emit = defineEmits<Emits>();
+
+// Count unresolved comments per file
+const commentsByFile = computed(() => {
+  const map = new Map<string, number>();
+  for (const c of comments) {
+    if (!c.resolved) {
+      map.set(c.filePath, (map.get(c.filePath) || 0) + 1);
+    }
+  }
+  return map;
+});
+
+const showCommitForm = ref(false);
+const commitMessageInput = ref("");
+
+function openCommitForm() {
+  commitMessageInput.value = defaultCommitMessage;
+  showCommitForm.value = true;
+}
+
+function cancelCommit() {
+  showCommitForm.value = false;
+  commitMessageInput.value = "";
+}
+
+function handleCommit() {
+  if (!commitMessageInput.value.trim()) return;
+  emit("commit", commitMessageInput.value.trim());
+}
+
+// Close form after successful commit (files list becomes empty)
+watch(() => files.length, (len, prevLen) => {
+  if (prevLen > 0 && len === 0 && showCommitForm.value) {
+    showCommitForm.value = false;
+    commitMessageInput.value = "";
+  }
+});
 
 const unstagedFiles = computed(() =>
   files.filter((f) => !viewedFiles.has(f.path)),
@@ -106,25 +160,37 @@ const statusColors: Record<string, string> = {
       <template v-if="files.length">
         <!-- Unstaged files -->
         <div v-if="unstagedFiles.length">
-          <p class="text-copy-xs text-tertiary mb-1 px-2 font-medium uppercase">
-            Unstaged ({{ unstagedFiles.length }})
-          </p>
+          <div class="mb-1 flex items-center justify-between px-2">
+            <p class="text-copy-xs text-tertiary font-medium uppercase">
+              Unstaged ({{ unstagedFiles.length }})
+            </p>
+            <button
+              type="button"
+              class="text-tertiary hover:text-accent flex items-center gap-0.5 outline-none"
+              title="Stage all"
+              @click="emit('stage-all')"
+            >
+              <CheckIcon class="size-3" />
+              <span class="text-copy-xs">All</span>
+            </button>
+          </div>
           <div class="flex flex-col gap-0.5">
             <OHover
               v-for="file in unstagedFiles"
               :key="file.path"
               :active="selectedFile === file.path"
               full-width
-              class="cursor-default"
+              class="group/file cursor-default"
             >
-              <div class="flex w-full items-center gap-1.5 px-1.5 py-1">
+              <div class="flex w-full items-center gap-1 px-1.5 py-1">
                 <button
                   type="button"
-                  class="text-tertiary hover:text-primary grid size-4 shrink-0 place-items-center outline-none"
+                  class="grid size-4 shrink-0 place-items-center rounded outline-none"
                   title="Mark as viewed"
                   @click.stop="emit('toggle-viewed', file.path)"
                 >
-                  <DocumentIcon class="size-3.5" />
+                  <DocumentIcon class="text-tertiary size-3 group-hover/file:hidden" />
+                  <PlusIcon class="text-accent size-3 hidden group-hover/file:block" />
                 </button>
                 <button
                   type="button"
@@ -133,6 +199,11 @@ const statusColors: Record<string, string> = {
                 >
                   {{ file.path.split("/").pop() }}
                 </button>
+                <ChatBubbleLeftIcon
+                  v-if="commentsByFile.get(file.path)"
+                  class="text-accent size-3 shrink-0"
+                  :title="`${commentsByFile.get(file.path)} comment${commentsByFile.get(file.path)! > 1 ? 's' : ''}`"
+                />
                 <span
                   class="text-copy-xs shrink-0 font-mono"
                   :class="statusColors[file.status] || 'text-tertiary'"
@@ -158,24 +229,29 @@ const statusColors: Record<string, string> = {
               full-width
               class="cursor-default"
             >
-              <div class="flex w-full items-center gap-1.5 px-1.5 py-1">
+              <div class="flex w-full items-center gap-1 px-1.5 py-1">
                 <button
                   type="button"
-                  class="text-success hover:text-primary grid size-4 shrink-0 place-items-center outline-none"
+                  class="text-accent hover:text-primary grid size-4 shrink-0 place-items-center rounded outline-none"
                   title="Mark as unviewed"
                   @click.stop="emit('toggle-viewed', file.path)"
                 >
-                  <DocumentCheckIcon class="size-3.5" />
+                  <CheckIcon class="size-3" />
                 </button>
                 <button
                   type="button"
-                  class="text-copy-sm text-secondary min-w-0 flex-1 truncate text-left line-through outline-none"
+                  class="text-copy-sm text-tertiary min-w-0 flex-1 truncate text-left outline-none"
                   @click="emit('select-file', file.path)"
                 >
                   {{ file.path.split("/").pop() }}
                 </button>
+                <ChatBubbleLeftIcon
+                  v-if="commentsByFile.get(file.path)"
+                  class="text-accent size-3 shrink-0 opacity-50"
+                  :title="`${commentsByFile.get(file.path)} comment${commentsByFile.get(file.path)! > 1 ? 's' : ''}`"
+                />
                 <span
-                  class="text-copy-xs shrink-0 font-mono"
+                  class="text-copy-xs shrink-0 font-mono opacity-50"
                   :class="statusColors[file.status] || 'text-tertiary'"
                 >
                   {{ file.status }}
@@ -189,12 +265,13 @@ const statusColors: Record<string, string> = {
 
     <!-- Review actions -->
     <div v-if="files.length" class="border-edge flex flex-col gap-1.5 border-t p-2">
-      <div v-if="commentCount" class="text-copy-xs text-tertiary flex items-center gap-1 px-0.5">
+      <!-- Comment count + request changes -->
+      <div v-if="commentCount && !showCommitForm" class="text-copy-xs text-tertiary flex items-center gap-1 px-0.5">
         <ChatBubbleLeftIcon class="size-3" />
         {{ commentCount }} comment{{ commentCount !== 1 ? "s" : "" }} pending
       </div>
       <OButton
-        v-if="commentCount"
+        v-if="commentCount && !showCommitForm"
         variant="primary"
         size="md"
         class="w-full"
@@ -202,17 +279,57 @@ const statusColors: Record<string, string> = {
       >
         Request Changes
       </OButton>
+
+      <!-- Approve & Commit button (shows commit form on click) -->
       <OButton
+        v-if="!showCommitForm"
         variant="transparent"
         size="md"
         class="w-full"
         :icon-left="CheckCircleIcon"
         :disabled="!allViewed"
         :title="allViewed ? 'Approve & commit changes' : 'Review all files first'"
-        @click="emit('approve')"
+        @click="openCommitForm"
       >
         Approve & Commit
       </OButton>
+
+      <!-- Inline commit form -->
+      <div v-if="showCommitForm" class="flex flex-col gap-1.5">
+        <textarea
+          v-model="commitMessageInput"
+          class="text-copy-sm text-primary bg-surface-1 border-edge w-full resize-none rounded-md border p-2 outline-none focus:border-edge-strong"
+          rows="4"
+          placeholder="Commit message..."
+          :disabled="committing"
+          @keydown.enter.meta.prevent="handleCommit"
+          @keydown.escape.prevent="cancelCommit"
+        />
+        <p v-if="commitError" class="text-copy-xs text-danger px-0.5">
+          {{ commitError }}
+        </p>
+        <div class="flex gap-1.5">
+          <OButton
+            variant="transparent"
+            size="sm"
+            class="flex-1"
+            :disabled="committing"
+            @click="cancelCommit"
+          >
+            Cancel
+          </OButton>
+          <OButton
+            variant="primary"
+            size="sm"
+            class="flex-1"
+            :disabled="!commitMessageInput.trim() || committing"
+            :loading="committing"
+            @click="handleCommit"
+          >
+            Commit
+          </OButton>
+        </div>
+      </div>
     </div>
   </div>
 </template>
