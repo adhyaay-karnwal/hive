@@ -180,7 +180,7 @@ watch(initializing, (val, old) => {
             @remove="removeFromQueue"
           />
 
-            <div class="bg-base-3 border-edge border">
+            <div class="bg-base-3">
             <OChatInput
               ref="chatInput"
               :disabled="!connected"

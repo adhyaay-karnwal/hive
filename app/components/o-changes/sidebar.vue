@@ -162,7 +162,7 @@ const statusColors: Record<string, string> = {
         <!-- Unstaged files -->
         <div v-if="unstagedFiles.length">
           <div class="mb-1 flex items-center justify-between px-2">
-            <p class="text-copy text-tertiary font-medium uppercase">
+            <p class="text-copy text-tertiary">
               Unstaged ({{ unstagedFiles.length }})
             </p>
             <OButton
@@ -184,22 +184,21 @@ const statusColors: Record<string, string> = {
               class="group/file cursor-default"
             >
               <div class="flex w-full items-center gap-1 px-1.5 py-1">
-                <OButton
-                  variant="transparent"
-                 
-                  :icon-left="DocumentIcon"
-                  class="shrink-0 [&_svg]:text-tertiary group-hover/file:[&_svg]:text-accent"
+                <button
+                  type="button"
+                  class="grid size-6 shrink-0 place-items-center outline-none"
                   title="Mark as viewed"
                   @click.stop="emit('toggle-viewed', file.path)"
-                />
-                <OButton
-                  variant="transparent"
-                 
-                  class="min-w-0 flex-1 justify-start truncate"
+                >
+                  <DocumentIcon class="text-tertiary size-4 group-hover/file:text-accent" />
+                </button>
+                <button
+                  type="button"
+                  class="text-copy text-primary min-w-0 flex-1 truncate text-left outline-none"
                   @click="emit('select-file', file.path)"
                 >
                   {{ file.path.split("/").pop() }}
-                </OButton>
+                </button>
                 <ChatBubbleLeftIcon
                   v-if="commentsByFile.get(file.path)"
                   class="text-accent size-4 shrink-0"
@@ -219,7 +218,7 @@ const statusColors: Record<string, string> = {
 
         <!-- Staged / Viewed files -->
         <div v-if="stagedFiles.length" :class="unstagedFiles.length ? 'mt-3' : ''">
-          <p class="text-copy text-tertiary mb-1 px-2 font-medium uppercase">
+          <p class="text-copy text-tertiary mb-1 px-2">
             Viewed ({{ stagedFiles.length }})
           </p>
           <div class="flex flex-col gap-0.5">
@@ -231,22 +230,21 @@ const statusColors: Record<string, string> = {
               class="cursor-default"
             >
               <div class="flex w-full items-center gap-1 px-1.5 py-1">
-                <OButton
-                  variant="transparent"
-                 
-                  :icon-left="CheckIcon"
-                  class="shrink-0 text-accent hover:text-primary"
+                <button
+                  type="button"
+                  class="grid size-6 shrink-0 place-items-center outline-none"
                   title="Mark as unviewed"
                   @click.stop="emit('toggle-viewed', file.path)"
-                />
-                <OButton
-                  variant="transparent"
-                 
-                  class="min-w-0 flex-1 justify-start truncate text-tertiary"
+                >
+                  <CheckIcon class="text-accent size-4 hover:text-primary" />
+                </button>
+                <button
+                  type="button"
+                  class="text-copy text-tertiary min-w-0 flex-1 truncate text-left outline-none"
                   @click="emit('select-file', file.path)"
                 >
                   {{ file.path.split("/").pop() }}
-                </OButton>
+                </button>
                 <ChatBubbleLeftIcon
                   v-if="commentsByFile.get(file.path)"
                   class="text-accent size-4 shrink-0 opacity-50"
