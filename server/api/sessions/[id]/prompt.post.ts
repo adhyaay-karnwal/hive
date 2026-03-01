@@ -1,17 +1,20 @@
 import { db } from "../../../database";
 import { sessions, worktrees } from "../../../database/schema";
 import { eq } from "drizzle-orm";
+import { z } from "zod/v4";
+
+const bodySchema = z.object({
+  message: z.string().min(1),
+});
 
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, "id");
-  const body = await readBody<{ message: string }>(event);
 
-  if (!id || !body.message) {
-    throw createError({
-      statusCode: 400,
-      message: "id and message are required",
-    });
+  if (!id) {
+    throw createError({ statusCode: 400, message: "id is required" });
   }
+
+  const body = await readValidatedBody(event, bodySchema.parse);
 
   const session = await db.query.sessions.findFirst({
     where: { id },

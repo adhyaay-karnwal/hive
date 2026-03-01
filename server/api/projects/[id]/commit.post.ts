@@ -2,20 +2,19 @@ import { db } from "../../../database";
 import { projects } from "../../../database/schema";
 import { eq } from "drizzle-orm";
 import simpleGit from "simple-git";
+import { z } from "zod/v4";
 
-/**
- * Stage all changes and commit with the provided message.
- */
+const bodySchema = z.object({
+  message: z.string().min(1),
+});
+
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, "id");
   if (!id) {
     throw createError({ statusCode: 400, message: "id is required" });
   }
 
-  const body = await readBody<{ message: string }>(event);
-  if (!body.message?.trim()) {
-    throw createError({ statusCode: 400, message: "Commit message is required" });
-  }
+  const body = await readValidatedBody(event, bodySchema.parse);
 
   const project = await db.query.projects.findFirst({
     where: { id },

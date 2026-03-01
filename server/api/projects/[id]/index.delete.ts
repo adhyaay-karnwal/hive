@@ -3,11 +3,6 @@ import { projects, worktrees, sessions, signals, reviews, reviewComments } from 
 import { eq } from "drizzle-orm";
 import { stopOpenCodeServer } from "../../../services/process";
 
-/**
- * Permanently delete a project and all its data.
- * This is NOT what closing a tab does - tabs are client-side only.
- * This is for actual project removal (e.g., from a settings/manage page).
- */
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, "id");
   if (!id) {

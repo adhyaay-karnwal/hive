@@ -3,16 +3,6 @@ import { projects } from "../../../database/schema";
 import { eq } from "drizzle-orm";
 import simpleGit from "simple-git";
 
-/**
- * Get the current git diff and changed files for a project.
- * Returns the raw unified diff string and a list of changed file paths with status.
- *
- * Handles multiple scenarios:
- * - Normal repo with commits: diff against HEAD
- * - Repo with no commits: show all tracked (staged) files
- * - Unstaged modifications: git diff
- * - Staged changes: git diff --cached
- */
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, "id");
   if (!id) {
@@ -67,10 +57,6 @@ export default defineEventHandler(async (event) => {
       // No commits yet — diff staged files against empty tree
       diff = await git.diff(["--cached"]);
     }
-
-    console.log(
-      `[changes] project=${id} hasCommits=${hasCommits} files=${files.length} diffBytes=${diff.length}`,
-    );
 
     return { diff: diff || "", files };
   } catch (e: any) {

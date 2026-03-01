@@ -3,13 +3,14 @@ import { projects } from "../../database/schema";
 import { detectProject } from "../../services/detector";
 import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
+import { z } from "zod/v4";
+
+const bodySchema = z.object({
+  path: z.string().min(1),
+});
 
 export default defineEventHandler(async (event) => {
-  const body = await readBody<{ path: string }>(event);
-
-  if (!body.path) {
-    throw createError({ statusCode: 400, message: "path is required" });
-  }
+  const body = await readValidatedBody(event, bodySchema.parse);
 
   // Check if project with this path already exists
   const existing = await db.query.projects.findFirst({

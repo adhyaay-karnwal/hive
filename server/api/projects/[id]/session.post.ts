@@ -2,18 +2,16 @@ import { db } from "../../../database";
 import { projects } from "../../../database/schema";
 import { eq } from "drizzle-orm";
 import { parseConfig } from "../../../utils/parse-config";
+import { z } from "zod/v4";
 
-/**
- * Get or create a session on the project's main OpenCode server.
- *
- * If we have a stored session ID in configOverride, check if it still
- * exists on the OpenCode server and reuse it (preserving conversation history).
- * Otherwise create a new one and store its ID.
- */
+const bodySchema = z.object({
+  forceNew: z.boolean().optional(),
+});
+
 export default defineEventHandler(async (event) => {
   const t0 = Date.now();
   const id = getRouterParam(event, "id");
-  const body = await readBody<{ forceNew?: boolean }>(event).catch(() => null);
+  const body = await readValidatedBody(event, bodySchema.parse);
 
   if (!id) {
     throw createError({ statusCode: 400, message: "id is required" });

@@ -1,14 +1,14 @@
 import { db } from "../../database";
 import { worktrees } from "../../database/schema";
 import { eq } from "drizzle-orm";
+import { z } from "zod/v4";
+
+const querySchema = z.object({
+  projectId: z.string().min(1),
+});
 
 export default defineEventHandler(async (event) => {
-  const query = getQuery(event);
-  const projectId = query.projectId as string;
-
-  if (!projectId) {
-    throw createError({ statusCode: 400, message: "projectId is required" });
-  }
+  const { projectId } = await getValidatedQuery(event, querySchema.parse);
 
   return db
     .select()

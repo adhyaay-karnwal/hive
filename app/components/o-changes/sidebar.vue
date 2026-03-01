@@ -264,7 +264,7 @@ const statusColors: Record<string, string> = {
     </div>
 
     <!-- Review actions -->
-    <div v-if="files.length" class="border-edge flex flex-col gap-1.5 border-t p-2">
+    <div v-if="files.length || commentCount" class="border-edge flex flex-col gap-1.5 border-t p-2">
       <!-- Comment count + request changes -->
       <div v-if="commentCount && !showCommitForm" class="text-copy text-tertiary flex items-center gap-1 px-0.5">
         <ChatBubbleLeftIcon class="size-4" />

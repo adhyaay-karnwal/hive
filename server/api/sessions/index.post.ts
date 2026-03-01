@@ -2,19 +2,15 @@ import { db } from "../../database";
 import { sessions, worktrees } from "../../database/schema";
 import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
+import { z } from "zod/v4";
+
+const bodySchema = z.object({
+  worktreeId: z.string().min(1),
+  role: z.enum(["main", "worker", "reviewer"]),
+});
 
 export default defineEventHandler(async (event) => {
-  const body = await readBody<{
-    worktreeId: string;
-    role: "main" | "worker" | "reviewer";
-  }>(event);
-
-  if (!body.worktreeId || !body.role) {
-    throw createError({
-      statusCode: 400,
-      message: "worktreeId and role are required",
-    });
-  }
+  const body = await readValidatedBody(event, bodySchema.parse);
 
   const worktree = await db.query.worktrees.findFirst({
     where: { id: body.worktreeId },

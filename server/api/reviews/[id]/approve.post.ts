@@ -2,10 +2,15 @@ import { db } from "../../../database";
 import { reviews, worktrees } from "../../../database/schema";
 import { eq } from "drizzle-orm";
 import simpleGit from "simple-git";
+import { z } from "zod/v4";
+
+const bodySchema = z.object({
+  commitMessage: z.string().optional(),
+});
 
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, "id");
-  const body = await readBody<{ commitMessage?: string }>(event);
+  const body = await readValidatedBody(event, bodySchema.parse);
 
   if (!id) {
     throw createError({ statusCode: 400, message: "id is required" });

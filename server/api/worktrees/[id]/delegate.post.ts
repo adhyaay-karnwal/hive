@@ -3,24 +3,21 @@ import { sessions, worktrees } from "../../../database/schema";
 import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { buildWorkerPrompt } from "../../../services/prompt-builder";
+import { z } from "zod/v4";
 
-/**
- * Delegate a task to the worker agent running in this worktree.
- * Sends a prompt to the OpenCode session.
- */
+const bodySchema = z.object({
+  taskDescription: z.string().min(1),
+  linearIssueDescription: z.string().optional(),
+});
+
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, "id");
-  const body = await readBody<{
-    taskDescription: string;
-    linearIssueDescription?: string;
-  }>(event);
 
-  if (!id || !body.taskDescription) {
-    throw createError({
-      statusCode: 400,
-      message: "id and taskDescription are required",
-    });
+  if (!id) {
+    throw createError({ statusCode: 400, message: "id is required" });
   }
+
+  const body = await readValidatedBody(event, bodySchema.parse);
 
   const worktree = await db.query.worktrees.findFirst({
     where: { id },

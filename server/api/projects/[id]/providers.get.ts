@@ -3,10 +3,6 @@ import { projects } from "../../../database/schema";
 import { eq } from "drizzle-orm";
 import { parseConfig } from "../../../utils/parse-config";
 
-/**
- * Get available providers and models from the OpenCode server.
- * Used for the model selector in the chat input.
- */
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, "id");
 

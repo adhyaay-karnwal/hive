@@ -13,6 +13,20 @@ const IGNORED = new Set([
   ".turbo", "coverage", ".next", ".svelte-kit", "__pycache__",
 ]);
 
+export default defineEventHandler(async (event) => {
+  const id = getRouterParam(event, "id");
+  if (!id) throw createError({ statusCode: 400, message: "id is required" });
+
+  const project = await db.query.projects.findFirst({
+    where: { id },
+  });
+
+  if (!project) throw createError({ statusCode: 404, message: "Project not found" });
+
+  const tree = await buildTree(project.path, project.path);
+  return { tree };
+});
+
 async function buildTree(dir: string, root: string): Promise<FileTreeNode[]> {
   let entries: string[];
   try {
@@ -51,17 +65,3 @@ async function buildTree(dir: string, root: string): Promise<FileTreeNode[]> {
 
   return [...dirs, ...files];
 }
-
-export default defineEventHandler(async (event) => {
-  const id = getRouterParam(event, "id");
-  if (!id) throw createError({ statusCode: 400, message: "id is required" });
-
-  const project = await db.query.projects.findFirst({
-    where: { id },
-  });
-
-  if (!project) throw createError({ statusCode: 404, message: "Project not found" });
-
-  const tree = await buildTree(project.path, project.path);
-  return { tree };
-});

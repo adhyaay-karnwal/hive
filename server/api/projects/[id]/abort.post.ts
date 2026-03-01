@@ -2,17 +2,20 @@ import { db } from "../../../database";
 import { projects } from "../../../database/schema";
 import { eq } from "drizzle-orm";
 import { parseConfig } from "../../../utils/parse-config";
+import { z } from "zod/v4";
+
+const bodySchema = z.object({
+  sessionId: z.string().min(1),
+});
 
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, "id");
-  const body = await readBody<{ sessionId: string }>(event).catch(() => null);
 
-  if (!id || !body?.sessionId) {
-    throw createError({
-      statusCode: 400,
-      message: "id and sessionId are required",
-    });
+  if (!id) {
+    throw createError({ statusCode: 400, message: "id is required" });
   }
+
+  const body = await readValidatedBody(event, bodySchema.parse);
 
   const project = await db.query.projects.findFirst({
     where: { id },

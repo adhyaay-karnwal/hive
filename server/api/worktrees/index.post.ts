@@ -5,21 +5,17 @@ import { nanoid } from "nanoid";
 import { createWorktree } from "../../services/worktree";
 import { allocatePort } from "../../services/port-allocator";
 import { installDeps, startOpenCodeServer } from "../../services/process";
+import { z } from "zod/v4";
+
+const bodySchema = z.object({
+  projectId: z.string().min(1),
+  branchName: z.string().min(1),
+  linearIssueId: z.string().optional(),
+  linearIssueIdentifier: z.string().optional(),
+});
 
 export default defineEventHandler(async (event) => {
-  const body = await readBody<{
-    projectId: string;
-    branchName: string;
-    linearIssueId?: string;
-    linearIssueIdentifier?: string;
-  }>(event);
-
-  if (!body.projectId || !body.branchName) {
-    throw createError({
-      statusCode: 400,
-      message: "projectId and branchName are required",
-    });
-  }
+  const body = await readValidatedBody(event, bodySchema.parse);
 
   // Get the project
   const project = await db.query.projects.findFirst({

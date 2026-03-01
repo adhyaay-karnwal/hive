@@ -2,21 +2,20 @@ import { db } from "../../../database";
 import { projects } from "../../../database/schema";
 import { eq } from "drizzle-orm";
 import { parseConfig } from "../../../utils/parse-config";
+import { z } from "zod/v4";
 
-/**
- * Get messages for a project's main OpenCode session.
- */
+const querySchema = z.object({
+  sessionId: z.string().min(1),
+});
+
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, "id");
-  const query = getQuery(event);
-  const sessionId = query.sessionId as string;
 
-  if (!id || !sessionId) {
-    throw createError({
-      statusCode: 400,
-      message: "id and sessionId are required",
-    });
+  if (!id) {
+    throw createError({ statusCode: 400, message: "id is required" });
   }
+
+  const { sessionId } = await getValidatedQuery(event, querySchema.parse);
 
   const project = await db.query.projects.findFirst({
     where: { id },

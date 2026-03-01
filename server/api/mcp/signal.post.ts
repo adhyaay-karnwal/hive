@@ -2,28 +2,17 @@ import { db } from "../../database";
 import { signals, sessions } from "../../database/schema";
 import { eq, and } from "drizzle-orm";
 import { nanoid } from "nanoid";
+import { z } from "zod/v4";
 
-/**
- * MCP Signal endpoint.
- * Worker agents call this to signal questions, progress, completion, etc.
- *
- * For "question" type signals, this endpoint blocks (long-polls)
- * until the user provides an answer via the UI.
- */
+const bodySchema = z.object({
+  type: z.enum(["question", "done", "progress", "error", "blocked"]),
+  content: z.string().min(1),
+  options: z.array(z.string()).optional(),
+  sessionId: z.string().optional(),
+});
+
 export default defineEventHandler(async (event) => {
-  const body = await readBody<{
-    type: "question" | "done" | "progress" | "error" | "blocked";
-    content: string;
-    options?: string[];
-    sessionId?: string;
-  }>(event);
-
-  if (!body.type || !body.content) {
-    throw createError({
-      statusCode: 400,
-      message: "type and content are required",
-    });
-  }
+  const body = await readValidatedBody(event, bodySchema.parse);
 
   const signalId = nanoid();
 

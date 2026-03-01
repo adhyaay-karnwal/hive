@@ -2,12 +2,6 @@ import { db } from "../../../database";
 import { sessions, worktrees } from "../../../database/schema";
 import { eq } from "drizzle-orm";
 
-/**
- * Get messages for a session.
- * Proxies to OpenCode's GET /session/:id/message endpoint.
- *
- * OpenCode returns: { info: { role, id, sessionID, ... }, parts: [{ type, text }] }[]
- */
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, "id");
 
@@ -34,14 +28,10 @@ export default defineEventHandler(async (event) => {
   const opencodeUrl = `http://localhost:${worktree.opencodePort}`;
 
   try {
-    // OpenCode API: GET /session/:id/message (singular, not messages)
     const res = await fetch(
       `${opencodeUrl}/session/${session.opencodeSessionId}/message`,
     );
-    const messages = await res.json();
-
-    // messages is an array of { info: { role, ... }, parts: [{ type, text }] }
-    return messages;
+    return await res.json();
   } catch {
     return [];
   }
