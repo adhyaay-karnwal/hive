@@ -27,19 +27,14 @@ export default defineEventHandler(async (event) => {
   const git = simpleGit(project.path);
 
   try {
-    // Stage everything
     await git.add("-A");
 
-    // Check if there's anything to commit
     const status = await git.status();
     if (status.staged.length === 0 && status.created.length === 0 && status.deleted.length === 0 && status.modified.length === 0) {
       throw createError({ statusCode: 400, message: "Nothing to commit" });
     }
 
-    // Commit
     const result = await git.commit(body.message.trim());
-
-    console.log(`[commit] project=${id} hash=${result.commit} summary=${result.summary.changes} files changed`);
 
     return {
       hash: result.commit,
@@ -48,7 +43,6 @@ export default defineEventHandler(async (event) => {
     };
   } catch (e: any) {
     if (e.statusCode) throw e;
-    console.error(`[commit] Failed for project ${id}:`, e.message);
     throw createError({ statusCode: 500, message: e.message || "Failed to commit" });
   }
 });
