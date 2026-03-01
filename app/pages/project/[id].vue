@@ -5,7 +5,7 @@ import { ArrowPathIcon } from "@heroicons/vue/20/solid";
 const route = useRoute();
 const projectId = computed(() => route.params.id as string);
 
-const { data: projectData } = useFetch(`/api/projects/${projectId.value}`);
+const { data: projectData } = await useFetch(`/api/projects/${projectId.value}`);
 
 const store = useHiveStore();
 const { connected, initializing, error, port } = store.project(projectId.value);
