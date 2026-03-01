@@ -34,7 +34,7 @@ const isDiffOpen = computed(() => !!selectedFile.value);
     <div class="flex min-h-0 flex-1 gap-1 px-1 pb-1">
       <aside
         v-show="!isDiffOpen"
-        class="bg-base-1 flex w-60 shrink-0 flex-col rounded-lg ring-1 ring-edge"
+        class="flex w-60 shrink-0 flex-col"
       >
         <OSidebar />
       </aside>
@@ -47,7 +47,7 @@ const isDiffOpen = computed(() => !!selectedFile.value);
 
       <aside
         v-if="hasProjectOpen"
-        class="bg-base-1 flex w-52 shrink-0 flex-col rounded-lg ring-1 ring-edge"
+        class="flex w-52 shrink-0 flex-col"
       >
         <OChangesPanel />
       </aside>

@@ -1,0 +1,32 @@
+:root {
+  --diff-bg: #070707;
+  --diff-fg: #fbfbfb;
+  --diff-fg-number: #84848A;
+
+  --diff-addition-base: #00cab1;
+  --diff-deletion-base: #ff2e3f;
+  --diff-selection-base: #009fff;
+
+  --diff-bg-addition: color-mix(in lab, var(--diff-bg) 80%, var(--diff-addition-base));
+  --diff-bg-addition-number: color-mix(in lab, var(--diff-bg) 85%, var(--diff-addition-base));
+  --diff-bg-addition-hover: color-mix(in lab, var(--diff-bg) 70%, var(--diff-addition-base));
+  --diff-bg-addition-emphasis: rgba(0, 202, 177, 0.2);
+
+  --diff-bg-deletion: color-mix(in lab, var(--diff-bg) 80%, var(--diff-deletion-base));
+  --diff-bg-deletion-number: color-mix(in lab, var(--diff-bg) 85%, var(--diff-deletion-base));
+  --diff-bg-deletion-hover: color-mix(in lab, var(--diff-bg) 75%, var(--diff-deletion-base));
+  --diff-bg-deletion-emphasis: rgba(255, 46, 63, 0.2);
+
+  --diff-bg-hover: color-mix(in lab, var(--diff-bg) 91%, white);
+  --diff-bg-context: color-mix(in lab, var(--diff-bg) 92.5%, white);
+  --diff-bg-separator: color-mix(in lab, var(--diff-bg) 85%, white);
+  --diff-bg-buffer: color-mix(in lab, var(--diff-bg) 92%, white);
+
+  --diff-bg-selection: color-mix(in lab, var(--diff-bg) 75%, var(--diff-selection-base));
+  --diff-bg-selection-number: color-mix(in lab, var(--diff-bg) 60%, var(--diff-selection-base));
+  --diff-selection-number-fg: color-mix(in lab, var(--diff-selection-base) 75%, white);
+
+  --diff-font: 'SF Mono', Monaco, Consolas, 'Ubuntu Mono', 'Liberation Mono', 'Courier New', monospace;
+  --diff-font-size: 13px;
+  --diff-line-height: 20px;
+}

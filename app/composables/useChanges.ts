@@ -27,6 +27,7 @@ const viewedFiles = ref(new Set<string>());
 const selectedFile = ref<string | null>(null);
 const selectedFileContent = ref<string | null>(null);
 const loadingFileContent = ref(false);
+const commentInputActive = ref(false);
 let activeProjectId: string | null = null;
 
 export function useChanges() {
@@ -97,6 +98,24 @@ export function useChanges() {
   }) {
     const id = projectId.value;
     if (!id) return;
+
+    const optimisticId = `temp-${Date.now()}`;
+    comments.value = [
+      ...comments.value,
+      {
+        id: optimisticId,
+        projectId: id,
+        sessionId: null,
+        filePath: comment.filePath,
+        startLine: comment.startLine,
+        endLine: comment.endLine,
+        side: comment.side || null,
+        content: comment.content,
+        resolved: false,
+        createdAt: new Date().toISOString(),
+      },
+    ];
+
     try {
       await $fetch(`/api/projects/${id}/change-comments`, {
         method: "POST",
@@ -104,6 +123,7 @@ export function useChanges() {
       });
       await fetchComments();
     } catch (e) {
+      comments.value = comments.value.filter((c) => c.id !== optimisticId);
       console.error("[changes] Failed to add comment:", e);
     }
   }
@@ -111,13 +131,37 @@ export function useChanges() {
   async function deleteComment(commentId: string) {
     const id = projectId.value;
     if (!id) return;
+
+    const prev = comments.value;
+    comments.value = comments.value.filter((c) => c.id !== commentId);
+
     try {
       await $fetch(`/api/projects/${id}/change-comments/${commentId}`, {
         method: "DELETE",
       });
-      await fetchComments();
     } catch (e) {
+      comments.value = prev;
       console.error("[changes] Failed to delete comment:", e);
+    }
+  }
+
+  async function updateComment(commentId: string, content: string) {
+    const id = projectId.value;
+    if (!id || !content.trim()) return;
+
+    const prev = comments.value;
+    comments.value = comments.value.map((c) =>
+      c.id === commentId ? { ...c, content: content.trim() } : c,
+    );
+
+    try {
+      await $fetch(`/api/projects/${id}/change-comments/${commentId}`, {
+        method: "PATCH",
+        body: { content: content.trim() },
+      });
+    } catch (e) {
+      comments.value = prev;
+      console.error("[changes] Failed to update comment:", e);
     }
   }
 
@@ -309,6 +353,7 @@ export function useChanges() {
     selectedFile,
     selectedFileContent,
     loadingFileContent,
+    commentInputActive,
     parsedFiles,
     selectedFileDiff,
     selectedFileComments,
@@ -321,6 +366,7 @@ export function useChanges() {
     fetchComments,
     addComment,
     deleteComment,
+    updateComment,
     toggleViewed,
     markViewedAndNext,
     selectFile,

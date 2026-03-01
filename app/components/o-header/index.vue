@@ -5,14 +5,15 @@ interface Props {
   icon?: Component;
   title?: string;
   description?: string;
+  borderless?: boolean;
 }
 
-const { icon, title, description } = defineProps<Props>();
+const { icon, title, description, borderless = false } = defineProps<Props>();
 const slots = useSlots();
 </script>
 
 <template>
-  <header class="border-edge flex h-12.5 shrink-0 items-center border-b p-2">
+  <header class="flex h-12.5 shrink-0 items-center p-2" :class="borderless ? '' : 'border-edge border-b'">
     <div class="flex flex-1 items-center gap-2 px-1.5">
       <div class="flex items-center gap-2">
         <component v-if="icon" :is="icon" class="text-primary size-4" />

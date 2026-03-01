@@ -21,22 +21,6 @@ const peerInfo = new Map<
   }
 >();
 
-// Debounce message fetching per peer to prevent rapid-fire full re-fetches
-// during streaming (message.updated / message.part.updated fire very frequently)
-const messageFetchTimers = new Map<string, ReturnType<typeof setTimeout>>();
-
-function debouncedFetchMessages(peer: Peer, port: number, sessionId: string, delay = 200) {
-  const existing = messageFetchTimers.get(peer.id);
-  if (existing) clearTimeout(existing);
-  messageFetchTimers.set(
-    peer.id,
-    setTimeout(() => {
-      messageFetchTimers.delete(peer.id);
-      fetchAndSendMessages(peer, port, sessionId);
-    }, delay),
-  );
-}
-
 export default defineWebSocketHandler({
   async open(peer: Peer) {
     const t0 = Date.now();
@@ -85,8 +69,16 @@ export default defineWebSocketHandler({
       try {
         const eventType = event.type;
 
-        if (eventType === "message.updated" || eventType === "message.part.updated") {
-          debouncedFetchMessages(peer, port, sessionId);
+        if (eventType === "message.updated") {
+          peer.send(JSON.stringify({ type: "message:updated", data: event.properties }));
+        } else if (eventType === "message.part.updated") {
+          peer.send(JSON.stringify({ type: "message:part.updated", data: event.properties }));
+        } else if (eventType === "message.removed") {
+          peer.send(JSON.stringify({ type: "message:removed", data: event.properties }));
+        } else if (eventType === "message.part.delta") {
+          peer.send(JSON.stringify({ type: "message:part.delta", data: event.properties }));
+        } else if (eventType === "message.part.removed") {
+          peer.send(JSON.stringify({ type: "message:part.removed", data: event.properties }));
         } else if (eventType === "session.status") {
           const eventSessionId = event.properties?.sessionID;
           if (eventSessionId && eventSessionId !== sessionId) return;
@@ -211,18 +203,12 @@ export default defineWebSocketHandler({
 
   close(peer: Peer) {
     (peer as any)?._cleanup?.();
-    const timer = messageFetchTimers.get(peer.id);
-    if (timer) clearTimeout(timer);
-    messageFetchTimers.delete(peer.id);
     peerInfo.delete(peer.id);
   },
 
   error(peer: Peer, error: Error) {
     console.error(`[ws:project] Error:`, error.message);
     (peer as any)?._cleanup?.();
-    const timer = messageFetchTimers.get(peer.id);
-    if (timer) clearTimeout(timer);
-    messageFetchTimers.delete(peer.id);
     peerInfo.delete(peer.id);
   },
 });

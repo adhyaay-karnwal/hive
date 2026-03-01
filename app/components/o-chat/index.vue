@@ -9,7 +9,7 @@ type Props = {
 const { projectId, placeholder } = defineProps<Props>();
 
 const store = useHiveStore();
-const { turns, isWorking, pendingQuestions, modelName, connected } = store.project(projectId);
+const { turns, messages, isWorking, pendingQuestions, modelName, connected, initializing } = store.project(projectId);
 
 const mode = ref<Mode>("build");
 const scrollArea = ref<HTMLDivElement>();
@@ -28,6 +28,7 @@ function handleSend(text: string) {
     messageQueue.value.push(text);
   } else {
     store.sendPrompt(projectId, text, { agent: mode.value });
+    stickToBottom.value = true;
     scrollToBottom();
   }
 }
@@ -44,21 +45,55 @@ function handleResolveQuestion(signalId: string, answer: string) {
   store.resolveSignal(projectId, signalId, answer);
 }
 
+// ── Scroll management via MutationObserver + ResizeObserver ──
+
+const stickToBottom = ref(true);
+let mutationObs: MutationObserver | null = null;
+let resizeObs: ResizeObserver | null = null;
+
 function scrollToBottom() {
-  nextTick(() => {
-    if (scrollArea.value) {
-      scrollArea.value.scrollTop = scrollArea.value.scrollHeight;
-    }
-  });
+  if (!scrollArea.value || !stickToBottom.value) return;
+  scrollArea.value.scrollTop = scrollArea.value.scrollHeight;
 }
 
-watch(() => turns.value.length, () => scrollToBottom());
-watch(isWorking, () => scrollToBottom());
+function onScroll() {
+  if (!scrollArea.value) return;
+  const { scrollTop, scrollHeight, clientHeight } = scrollArea.value;
+  stickToBottom.value = scrollTop + clientHeight >= scrollHeight - 40;
+}
+
+onMounted(() => {
+  const el = scrollArea.value;
+  if (!el) return;
+
+  // Observe DOM mutations (new message elements added)
+  mutationObs = new MutationObserver(() => scrollToBottom());
+  mutationObs.observe(el, { childList: true, subtree: true });
+
+  // Observe content size changes (markdown rendering, code blocks expanding)
+  resizeObs = new ResizeObserver(() => scrollToBottom());
+  for (const child of el.children) {
+    resizeObs.observe(child);
+  }
+});
+
+onUnmounted(() => {
+  mutationObs?.disconnect();
+  resizeObs?.disconnect();
+});
+
+// Force scroll on initial load
+watch(initializing, (val, old) => {
+  if (old && !val) {
+    stickToBottom.value = true;
+    nextTick(() => scrollToBottom());
+  }
+});
 </script>
 
 <template>
   <div class="flex h-full min-h-0 flex-col">
-    <div ref="scrollArea" class="min-h-0 flex-1 overflow-y-auto">
+    <div ref="scrollArea" class="min-h-0 flex-1 overflow-y-auto" @scroll="onScroll">
       <div
         v-if="!turns.length && !isWorking"
         class="flex h-full items-center justify-center"

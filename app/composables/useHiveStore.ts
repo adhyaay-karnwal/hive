@@ -109,6 +109,27 @@ function groupTurns(messages: RawMessage[]): Turn[] {
   return result;
 }
 
+// Memoized version that reuses Turn objects when the structure hasn't changed.
+// This prevents Vue from unmounting/remounting turn components on every message update.
+let prevTurns: Turn[] = [];
+
+function groupTurnsStable(messages: RawMessage[]): Turn[] {
+  const newTurns = groupTurns(messages);
+
+  const result = newTurns.map((turn, i) => {
+    const prev = prevTurns[i];
+    if (prev && prev.userMessage.info.id === turn.userMessage.info.id) {
+      // Same turn — keep the object identity, update assistant messages
+      prev.assistantMessages = turn.assistantMessages;
+      return prev;
+    }
+    return turn;
+  });
+
+  prevTurns = result;
+  return result;
+}
+
 function handleWsMessage(projectId: string, event: MessageEvent) {
   const s = ensureState(projectId);
 
@@ -122,14 +143,122 @@ function handleWsMessage(projectId: string, event: MessageEvent) {
   switch (msg.type) {
     case "messages": {
       const msgs = getMessages(projectId);
-      const jsonSize = JSON.stringify(msg.data).length;
-      console.log(`[ws] Messages received: ${msg.data.length} messages, ${Math.round(jsonSize / 1024)}KB`);
-      msgs.value = msg.data;
-      // Extract model name from latest assistant message
-      for (let i = msg.data.length - 1; i >= 0; i--) {
-        if (msg.data[i]?.info?.role === "assistant" && msg.data[i]?.info?.modelID) {
-          s.modelName = msg.data[i].info.modelID;
+      msgs.value = msg.data as RawMessage[];
+      for (let i = msgs.value.length - 1; i >= 0; i--) {
+        if (msgs.value[i]?.info?.role === "assistant" && msgs.value[i]?.info?.modelID) {
+          s.modelName = msgs.value[i].info.modelID;
           break;
+        }
+      }
+      break;
+    }
+
+    case "message:updated": {
+      const msgs = getMessages(projectId);
+      const info = msg.data.info;
+      if (!info?.id) break;
+
+      const idx = msgs.value.findIndex((m) => m.info.id === info.id);
+      if (idx >= 0) {
+        msgs.value[idx] = { ...msgs.value[idx], info };
+      } else {
+        // New message — check for a matching optimistic message
+        const optimisticIdx = msgs.value.findIndex(
+          (m) => m.info.id.startsWith("optimistic-") && m.info.role === info.role,
+        );
+        if (optimisticIdx >= 0) {
+          // Carry over the optimistic parts (user text) to the real message
+          const optimisticParts = msgs.value[optimisticIdx].parts;
+          msgs.value.splice(optimisticIdx, 1);
+          msgs.value.push({ info, parts: optimisticParts });
+        } else {
+          msgs.value.push({ info, parts: [] });
+        }
+      }
+      if (info.role === "assistant" && info.modelID) {
+        s.modelName = info.modelID;
+      }
+      triggerRef(msgs);
+      break;
+    }
+
+    case "message:part.updated": {
+      const msgs = getMessages(projectId);
+      const part = msg.data.part;
+      if (!part?.messageID) break;
+
+      const msgIdx = msgs.value.findIndex((m) => m.info.id === part.messageID);
+      if (msgIdx >= 0) {
+        const message = msgs.value[msgIdx];
+        const partIdx = message.parts.findIndex((p: any) => p.id === part.id);
+        if (partIdx >= 0) {
+          message.parts[partIdx] = part;
+        } else {
+          // Remove any optimistic parts (parts without an id) before adding the real one
+          message.parts = message.parts.filter((p: any) => p.id);
+          message.parts.push(part);
+        }
+        triggerRef(msgs);
+      }
+      break;
+    }
+
+    case "message:part.delta": {
+      // v2 streaming: incremental text append
+      const msgs = getMessages(projectId);
+      const { sessionID, messageID, partID, field, delta } = msg.data;
+      if (!messageID || !partID || !delta) break;
+
+      const msgIdx = msgs.value.findIndex((m) => m.info.id === messageID);
+      if (msgIdx >= 0) {
+        const message = msgs.value[msgIdx];
+        const partIdx = message.parts.findIndex((p: any) => p.id === partID);
+        if (partIdx >= 0) {
+          // Append delta to the specified field (usually "text")
+          const part = message.parts[partIdx] as any;
+          if (field && typeof part[field] === "string") {
+            part[field] += delta;
+          } else if (field) {
+            part[field] = delta;
+          }
+        } else {
+          // Part doesn't exist yet — create it with the delta
+          message.parts.push({
+            id: partID,
+            messageID,
+            sessionID,
+            type: "text",
+            [field || "text"]: delta,
+          } as any);
+        }
+        triggerRef(msgs);
+      }
+      break;
+    }
+
+    case "message:removed": {
+      const msgs = getMessages(projectId);
+      const { messageID } = msg.data;
+      if (!messageID) break;
+      const idx = msgs.value.findIndex((m) => m.info.id === messageID);
+      if (idx >= 0) {
+        msgs.value.splice(idx, 1);
+        triggerRef(msgs);
+      }
+      break;
+    }
+
+    case "message:part.removed": {
+      const msgs = getMessages(projectId);
+      const { messageID, partID } = msg.data;
+      if (!messageID || !partID) break;
+      const msgIdx = msgs.value.findIndex((m) => m.info.id === messageID);
+      if (msgIdx >= 0) {
+        const parts = msgs.value[msgIdx].parts;
+        const partIdx = parts.findIndex((p: any) => p.id === partID);
+        if (partIdx >= 0) {
+          parts.splice(partIdx, 1);
+          triggerRef(msgs);
         }
       }
       break;
@@ -304,7 +433,7 @@ export function useHiveStore() {
     return {
       state: computed(() => state[projectId]),
       messages: msgs,
-      turns: computed(() => groupTurns(msgs.value)),
+      turns: computed(() => groupTurnsStable(msgs.value)),
       isWorking: computed(() => state[projectId]?.isWorking ?? false),
       connected: computed(() => state[projectId]?.connected ?? false),
       initializing: computed(() => state[projectId]?.initializing ?? false),

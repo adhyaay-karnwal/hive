@@ -123,7 +123,7 @@ const statusColors: Record<string, string> = {
 
 <template>
   <div class="flex h-full flex-col">
-    <OHeader title="Changes">
+    <OHeader title="Changes" borderless>
       <template #trailing>
         <span
           v-if="files.length"
@@ -131,13 +131,14 @@ const statusColors: Record<string, string> = {
         >
           {{ stagedFiles.length }}/{{ files.length }}
         </span>
-        <OButton
-          variant="transparent"
-          size="xs"
-          :icon-left="ArrowPathIcon"
-          :class="loading ? 'animate-spin' : ''"
+        <button
+          type="button"
+          class="text-tertiary hover:text-primary grid size-6 place-items-center rounded outline-none"
+          title="Refresh"
           @click="emit('refresh')"
-        />
+        >
+          <ArrowPathIcon class="size-3.5" :class="loading ? 'animate-spin' : ''" />
+        </button>
       </template>
     </OHeader>
 

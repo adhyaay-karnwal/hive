@@ -127,29 +127,33 @@ async function connectSSE(port: number, sub: PortSubscription) {
 
       buffer += decoder.decode(value, { stream: true });
 
-      const lines = buffer.split("\n");
-      buffer = lines.pop() || "";
+      const chunks = buffer.split("\n\n");
+      buffer = chunks.pop() || "";
+      
+      for (const chunk of chunks) {
+        if (!chunk.trim()) continue;
 
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed) continue;
-
-        if (trimmed.startsWith("data:")) {
-          const jsonStr = trimmed.slice(5).trim();
-          if (!jsonStr) continue;
-
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const eventType = parsed.type;
-            const properties = parsed.properties || {};
-
-            if (!eventType) continue;
-            if (eventType === "server.heartbeat" || eventType === "server.connected") continue;
-
-            sub.emitter.emit("event", { type: eventType, properties });
-          } catch {
-            // malformed JSON
+        const dataLines: string[] = [];
+        for (const line of chunk.split("\n")) {
+          if (line.startsWith("data:")) {
+            dataLines.push(line.slice(5).trimStart());
           }
+        }
+
+        if (!dataLines.length) continue;
+
+        const rawData = dataLines.join("\n");
+        try {
+          const parsed = JSON.parse(rawData);
+          const eventType = parsed.type;
+          const properties = parsed.properties || {};
+
+          if (!eventType) continue;
+          if (eventType === "server.heartbeat" || eventType === "server.connected") continue;
+
+          sub.emitter.emit("event", { type: eventType, properties });
+        } catch (e) {
+          console.warn(`[sse:${port}] Failed to parse event:`, rawData.slice(0, 200));
         }
       }
     }

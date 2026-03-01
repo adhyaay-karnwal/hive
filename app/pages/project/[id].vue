@@ -26,6 +26,7 @@ const {
   closeOverlay,
   addComment,
   deleteComment,
+  updateComment,
   markViewedAndNext,
 } = useChanges();
 
@@ -91,6 +92,7 @@ const isSelectedFileViewed = computed(() =>
       @toggle-viewed="markViewedAndNext(selectedFile!)"
       @add-comment="addComment($event)"
       @delete-comment="deleteComment($event)"
+      @update-comment="(id: string, content: string) => updateComment(id, content)"
     />
   </div>
 </template>

@@ -9,6 +9,7 @@ import { ArrowPathIcon } from "@heroicons/vue/20/solid";
 
 type Part = {
   type: string;
+  id?: string;
   text?: string;
   tool?: string;
   callID?: string;
@@ -40,6 +41,10 @@ type Emits = {
   abort: [];
 };
 
+type RenderBlock =
+  | { kind: "text"; text: string; id: string }
+  | { kind: "tools"; tools: Part[]; id: string };
+
 const { userMessage, assistantMessages, isWorking = false } = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
@@ -50,38 +55,61 @@ const userText = computed(() => {
     .join("\n");
 });
 
-// Show full text only if multi-line - title handles single-line display
-const isMultiLine = computed(() => userText.value.includes("\n"));
+// Build sequential render blocks from all assistant messages.
+// Consecutive tool calls are grouped into a single collapsible block.
+// Text parts are individual blocks between tool groups.
+const blocks = computed<RenderBlock[]>(() => {
+  const result: RenderBlock[] = [];
 
-const toolCalls = computed(() => {
-  const tools: Part[] = [];
   for (const msg of assistantMessages) {
     for (const part of msg.parts) {
-      if (part.type === "tool") {
-        tools.push(part);
+      if (part.type === "text" && part.text) {
+        result.push({ kind: "text", text: part.text, id: part.id || `text-${msg.info.id}-${result.length}` });
+      } else if (part.type === "tool") {
+        const last = result[result.length - 1];
+        if (last?.kind === "tools") {
+          last.tools.push(part);
+        } else {
+          result.push({ kind: "tools", tools: [part], id: part.callID || `tools-${msg.info.id}-${result.length}` });
+        }
       }
     }
   }
-  return tools;
+
+  return result;
 });
 
-const responseText = computed(() => {
+const allText = computed(() =>
+  blocks.value
+    .filter((b): b is RenderBlock & { kind: "text" } => b.kind === "text")
+    .map((b) => b.text)
+    .join("\n\n"),
+);
+
+const totalToolCount = computed(() =>
+  blocks.value.reduce((n, b) => n + (b.kind === "tools" ? b.tools.length : 0), 0),
+);
+
+const statusText = computed(() => {
+  if (!isWorking) return "";
   for (let i = assistantMessages.length - 1; i >= 0; i--) {
-    const textParts = assistantMessages[i].parts.filter(
-      (p) => p.type === "text" && p.text,
-    );
-    if (textParts.length > 0) {
-      return textParts.map((p) => p.text!).join("\n");
+    for (let j = assistantMessages[i].parts.length - 1; j >= 0; j--) {
+      const part = assistantMessages[i].parts[j];
+      if (part.type === "tool") {
+        switch (part.tool) {
+          case "read": return "Gathering context";
+          case "glob": case "grep": case "codesearch": return "Searching codebase";
+          case "edit": case "write": return "Making edits";
+          case "bash": return "Running command";
+          case "webfetch": case "websearch": return "Searching the web";
+          case "task": return "Delegating work";
+          case "todowrite": return "Planning";
+          default: return "Working";
+        }
+      }
     }
   }
-  return "";
-});
-
-const showSteps = ref(false);
-const hasSteps = computed(() => toolCalls.value.length > 0);
-
-watch(() => isWorking, (working) => {
-  if (working) showSteps.value = true;
+  return "Thinking";
 });
 
 // Duration timer
@@ -114,60 +142,31 @@ const formattedDuration = computed(() => {
 
 const copied = ref(false);
 async function copyResponse() {
-  if (!responseText.value) return;
-  await navigator.clipboard.writeText(responseText.value);
+  if (!allText.value) return;
+  await navigator.clipboard.writeText(allText.value);
   copied.value = true;
-  setTimeout(() => { copied.value = false }, 2000);
+  setTimeout(() => { copied.value = false; }, 2000);
 }
-
-const statusText = computed(() => {
-  if (!isWorking) return "";
-  const lastTool = toolCalls.value[toolCalls.value.length - 1];
-  if (!lastTool) return "Thinking";
-  switch (lastTool.tool) {
-    case "read": return "Gathering context";
-    case "glob": case "grep": case "codesearch": return "Searching codebase";
-    case "edit": case "write": return "Making edits";
-    case "bash": return "Running command";
-    case "webfetch": case "websearch": return "Searching the web";
-    case "task": return "Delegating work";
-    case "todowrite": return "Planning";
-    default: return "Working";
-  }
-});
 </script>
 
 <template>
-  <div class="py-2">
-    <div class="px-5 pb-2">
-      <p class="text-copy text-primary whitespace-pre-wrap">{{ userText }}</p>
+  <div class="border-edge border-b py-5 last:border-b-0">
+    <!-- User message -->
+    <div class="px-5 pb-3">
+      <div class="bg-surface-1 inline-block max-w-full rounded-xl px-4 py-2.5">
+        <p class="text-copy text-primary whitespace-pre-wrap break-words">{{ userText }}</p>
+      </div>
     </div>
 
-    <div v-if="hasSteps || isWorking" class="px-5 py-1">
+    <!-- Working indicator -->
+    <div v-if="isWorking && !blocks.length" class="px-5 py-1">
       <div class="flex items-center gap-1.5">
+        <ArrowPathIcon class="text-accent size-3.5 animate-spin" />
+        <span class="text-copy-sm text-secondary">{{ statusText }}</span>
+        <span v-if="formattedDuration" class="text-copy-sm text-tertiary font-mono">
+          · {{ formattedDuration }}
+        </span>
         <button
-          type="button"
-          class="text-copy-sm text-tertiary hover:text-secondary flex items-center gap-1.5 outline-none"
-          @click="showSteps = !showSteps"
-        >
-          <template v-if="isWorking">
-            <ArrowPathIcon class="text-accent size-3.5 animate-spin" />
-            <span class="text-secondary">{{ statusText }}</span>
-            <span v-if="formattedDuration" class="text-tertiary font-mono">
-              · {{ formattedDuration }}
-            </span>
-          </template>
-          <template v-else>
-            <ChevronDownIcon
-              class="size-3.5 transition-transform"
-              :class="showSteps ? '' : '-rotate-90'"
-            />
-            <span>{{ toolCalls.length }} step{{ toolCalls.length === 1 ? "" : "s" }}</span>
-          </template>
-        </button>
-
-        <button
-          v-if="isWorking"
           type="button"
           class="text-tertiary hover:text-danger ml-auto grid size-5 place-items-center rounded transition-colors"
           title="Stop (Escape)"
@@ -178,27 +177,50 @@ const statusText = computed(() => {
       </div>
     </div>
 
-    <div v-if="showSteps && hasSteps" class="px-5 py-1">
-      <div class="flex flex-col">
-        <OChatToolCall
-          v-for="tool in toolCalls"
-          :key="tool.callID || tool.tool"
-          :part="tool as any"
-        />
+    <!-- Sequential blocks: text and tool groups interleaved -->
+    <template v-for="(block, blockIdx) in blocks" :key="block.id">
+      <!-- Text block -->
+      <div v-if="block.kind === 'text'" class="group/resp relative px-5 py-1">
+        <button
+          type="button"
+          class="absolute top-1 right-5 grid size-6 place-items-center rounded opacity-0 transition-opacity outline-none group-hover/resp:opacity-100"
+          :class="copied ? 'text-accent' : 'text-tertiary hover:text-secondary'"
+          @click="copyResponse"
+        >
+          <component :is="copied ? CheckIcon : ClipboardIcon" class="size-3.5" />
+        </button>
+        <OChatMarkdown :content="block.text" />
       </div>
-    </div>
 
-    <div v-if="responseText" class="group/resp relative px-5 pt-2 pb-4">
-      <button
-        type="button"
-        class="absolute top-2 right-5 grid size-6 place-items-center rounded opacity-0 transition-opacity outline-none group-hover/resp:opacity-100"
-        :class="copied ? 'text-success' : 'text-tertiary hover:text-secondary'"
-        @click="copyResponse"
-      >
-        <component :is="copied ? CheckIcon : ClipboardIcon" class="size-3.5" />
-      </button>
+      <!-- Tool call group (collapsible) -->
+      <OChatToolGroup
+        v-else-if="block.kind === 'tools'"
+        :tools="block.tools"
+        :is-last="blockIdx === blocks.length - 1"
+        :is-working="isWorking"
+        :status-text="statusText"
+        :formatted-duration="formattedDuration"
+        @abort="emit('abort')"
+      />
+    </template>
 
-      <OChatMarkdown :content="responseText" />
+    <!-- Working indicator when actively streaming after existing blocks -->
+    <div v-if="isWorking && blocks.length" class="px-5 py-1">
+      <div class="flex items-center gap-1.5">
+        <ArrowPathIcon class="text-accent size-3.5 animate-spin" />
+        <span class="text-copy-sm text-secondary">{{ statusText }}</span>
+        <span v-if="formattedDuration" class="text-copy-sm text-tertiary font-mono">
+          · {{ formattedDuration }}
+        </span>
+        <button
+          type="button"
+          class="text-tertiary hover:text-danger ml-auto grid size-5 place-items-center rounded transition-colors"
+          title="Stop (Escape)"
+          @click.stop="emit('abort')"
+        >
+          <StopIcon class="size-3" />
+        </button>
+      </div>
     </div>
   </div>
 </template>

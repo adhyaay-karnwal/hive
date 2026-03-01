@@ -84,7 +84,7 @@ async function toggleDevServer(wt: any) {
 
 <template>
   <div class="flex h-full flex-col">
-    <OHeader :icon="CodeBracketIcon" title="Worktrees">
+    <OHeader :icon="CodeBracketIcon" title="Worktrees" borderless>
       <template #trailing>
         <OButton
           variant="transparent"
@@ -172,8 +172,8 @@ async function toggleDevServer(wt: any) {
       </div>
     </div>
 
-    <div class="border-edge border-t">
-      <OHeader :icon="BellAlertIcon" title="Signals">
+    <div>
+      <OHeader :icon="BellAlertIcon" title="Signals" borderless>
         <template #trailing>
           <span
             v-if="pendingSignals?.length"

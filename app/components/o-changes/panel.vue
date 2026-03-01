@@ -32,24 +32,25 @@ onMounted(() => init());
 const route = useRoute();
 watch(() => route.params.id, () => init());
 
-// Auto-refresh when agent goes idle
+// Auto-refresh: poll every 5s while a project is open
 const projectId = computed(() => (route.params.id as string) || null);
-const store = useHiveStore();
 
-const agentWorking = computed(() => {
-  if (!projectId.value) return false;
-  const { isWorking } = store.project(projectId.value);
-  return isWorking.value;
-});
-
-watch(agentWorking, (working, wasWorking) => {
-  if (wasWorking && !working) {
+const { pause, resume } = useIntervalFn(() => {
+  if (projectId.value && !loading.value) {
     fetchChanges();
   }
-});
+}, 5000, { immediate: false });
 
-// Escape key closes overlay
+watch(projectId, (id) => {
+  if (id) resume();
+  else pause();
+}, { immediate: true });
+
+onUnmounted(() => pause());
+
 onKeyStroke("Escape", () => {
+  const { commentInputActive } = useChanges();
+  if (commentInputActive.value) return;
   if (selectedFile.value) {
     selectedFile.value = null;
   }
