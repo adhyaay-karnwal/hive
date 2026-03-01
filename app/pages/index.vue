@@ -48,22 +48,18 @@ async function openNew() {
           :key="proj.id"
           full-width
           class="cursor-default"
+          @click="openExisting(proj.id)"
         >
-          <OButton
-            variant="transparent"
-           
-            :icon-left="FolderIcon"
-            class="w-full justify-start gap-3 px-3 py-2"
-            @click="openExisting(proj.id)"
-          >
-            <div class="min-w-0 flex-1 text-left">
+          <div class="flex w-full items-center gap-3 px-3 py-2">
+            <FolderIcon class="text-tertiary size-4 shrink-0" />
+            <div class="min-w-0 flex-1">
               <p class="text-copy text-primary truncate">{{ proj.name }}</p>
               <p class="text-copy text-tertiary truncate">{{ proj.path }}</p>
             </div>
             <span v-if="proj.pkgManager" class="text-copy text-tertiary shrink-0">
               {{ proj.pkgManager }}
             </span>
-          </OButton>
+          </div>
         </OHover>
       </div>
     </div>
