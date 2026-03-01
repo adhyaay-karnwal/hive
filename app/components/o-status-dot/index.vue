@@ -27,7 +27,7 @@ const statusLabels: Record<Status, string> = {
 <template>
   <div class="flex items-center gap-1.5">
     <span
-      class="inline-block size-2 rounded-full"
+      class="inline-block size-2"
       :class="[
         statusClasses[status],
         status === 'working' ? 'animate-pulse' : '',

@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { Cog6ToothIcon } from "@heroicons/vue/16/solid";
+import { Cog6ToothIcon, MoonIcon, SunIcon } from "@heroicons/vue/16/solid";
 import { TooltipProvider } from "reka-ui";
 
 const route = useRoute();
 const hasProjectOpen = computed(() => !!route.params.id);
 const { selectedFile } = useChanges();
 const isDiffOpen = computed(() => !!selectedFile.value);
+const { isDark, toggleTheme } = useTheme();
 </script>
 
 <template>
@@ -25,6 +26,12 @@ const isDiffOpen = computed(() => !!selectedFile.value);
         <OButton
           variant="transparent"
           size="xs"
+          :icon-left="isDark ? SunIcon : MoonIcon"
+          @click="toggleTheme()"
+        />
+        <OButton
+          variant="transparent"
+          size="xs"
           :icon-left="Cog6ToothIcon"
           to="/settings"
         />
@@ -40,7 +47,7 @@ const isDiffOpen = computed(() => !!selectedFile.value);
       </aside>
 
       <main
-        class="bg-base-1 relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-lg ring-1 ring-edge"
+        class="bg-base-1 relative flex min-w-0 flex-1 flex-col overflow-hidden ring-1 ring-edge"
       >
         <slot />
       </main>

@@ -25,7 +25,7 @@ const emit = defineEmits<Emits>();
       </p>
       <button
         type="button"
-        class="text-tertiary hover:text-primary grid size-5 shrink-0 place-items-center rounded opacity-0 transition-opacity outline-none group-hover/q:opacity-100"
+        class="text-tertiary hover:text-primary grid size-5 shrink-0 place-items-center opacity-0 transition-opacity outline-none group-hover/q:opacity-100"
         @click="emit('remove', i)"
       >
         <XMarkIcon class="size-3" />

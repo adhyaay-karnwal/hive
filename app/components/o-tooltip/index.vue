@@ -34,7 +34,7 @@ const {
         :side="side"
         :align="align"
         :side-offset="sideOffset"
-        class="bg-base-3 text-copy-xs text-primary border-edge z-50 rounded-md border px-2 py-1 shadow-sm data-[state=delayed-open]:animate-[contentShow_150ms_ease-out] data-[state=closed]:animate-[fade-out_100ms_ease-in]"
+        class="bg-base-3 text-copy-xs text-primary border-edge z-50 border px-2 py-1 shadow-sm data-[state=delayed-open]:animate-[contentShow_150ms_ease-out] data-[state=closed]:animate-[fade-out_100ms_ease-in]"
       >
         <slot name="content">
           {{ content }}

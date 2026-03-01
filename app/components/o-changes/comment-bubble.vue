@@ -33,7 +33,7 @@ function saveEdit() {
 
 <template>
   <div
-    class="my-1 mx-1.5 rounded-md border p-2.5 text-sm"
+    class="my-1 mx-1.5 border p-2.5 text-sm"
     :class="resolved ? 'border-edge/50 opacity-40' : 'bg-base-1 border-edge'"
   >
     <template v-if="!editing">
@@ -58,7 +58,7 @@ function saveEdit() {
         ref="textareaRef"
         v-model="editText"
         rows="3"
-        class="text-primary bg-base-0 border-edge w-full resize-none rounded-md border p-2 text-sm outline-none focus:border-edge-strong"
+        class="text-primary bg-base-0 border-edge w-full resize-none border p-2 text-sm outline-none focus:border-edge-strong"
         @keydown.enter.meta.prevent="saveEdit"
         @keydown.escape.prevent="editing = false"
       />

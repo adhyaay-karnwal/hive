@@ -79,7 +79,7 @@ const output = computed(() => {
 <template>
   <button
     type="button"
-    class="group/tc flex w-full items-center gap-2 rounded px-2 py-1 text-left transition-colors outline-none"
+    class="group/tc flex w-full items-center gap-2 px-2 py-1 text-left transition-colors outline-none"
     :class="expanded ? 'bg-surface-1' : 'hover:bg-surface-1/50'"
     @click="expanded = !expanded"
   >
@@ -108,12 +108,12 @@ const output = computed(() => {
   </button>
 
   <div v-if="expanded" class="mb-1 ml-6 mr-2 mt-0.5">
-    <div v-if="part.state?.status === 'error' && part.state?.error" class="text-copy-sm text-danger rounded bg-danger-subtle p-2">
+    <div v-if="part.state?.status === 'error' && part.state?.error" class="text-copy-sm text-danger bg-danger-subtle p-2">
       {{ part.state.error }}
     </div>
     <pre
       v-else-if="output || (part.tool === 'bash' && part.state?.input?.command)"
-      class="bg-terminal text-terminal-text max-h-48 overflow-auto rounded-md p-2.5 font-mono text-xs leading-relaxed"
+      class="bg-terminal text-terminal-text max-h-48 overflow-auto p-2.5 font-mono text-xs leading-relaxed"
     ><template v-if="part.tool === 'bash' && part.state?.input?.command"><span class="text-terminal-dim">$</span> {{ part.state.input.command }}
 </template>{{ output }}</pre>
     <div v-else class="text-copy-xs text-tertiary p-2 italic">No output</div>

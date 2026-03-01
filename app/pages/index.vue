@@ -73,7 +73,7 @@ async function openNew() {
     <div class="flex flex-col items-center gap-4">
       <div
         v-if="!projects?.length"
-        class="bg-surface-1 grid size-16 place-items-center rounded-xl"
+        class="bg-surface-1 grid size-16 place-items-center"
       >
         <FolderOpenIcon class="text-tertiary size-8" />
       </div>

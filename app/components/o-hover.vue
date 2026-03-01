@@ -16,7 +16,7 @@ interface Props {
 const {
   active = false,
   background = "bg-surface-1",
-  borderRadius = "rounded-md",
+  borderRadius = "",
   hoverScale = "group-hover/h:inset-0",
   activeScale = "inset-0",
   inactiveScale = "inset-1",

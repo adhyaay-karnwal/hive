@@ -34,7 +34,7 @@ function selectOption(option: string) {
 </script>
 
 <template>
-  <div class="border-edge rounded-md border p-2">
+  <div class="border-edge border p-2">
     <div class="flex items-start gap-2">
       <QuestionMarkCircleIcon
         v-if="!signal.resolved"
@@ -57,7 +57,7 @@ function selectOption(option: string) {
             v-for="opt in (signal.options as string[])"
             :key="opt"
             type="button"
-            class="bg-surface-1 hover:bg-surface-2 text-copy-sm text-primary rounded px-2 py-1 text-left"
+            class="bg-surface-1 hover:bg-surface-2 text-copy-sm text-primary px-2 py-1 text-left"
             :disabled="resolving"
             @click="selectOption(opt)"
           >
@@ -69,7 +69,7 @@ function selectOption(option: string) {
           <form @submit.prevent="submitAnswer" class="flex gap-1">
             <input
               v-model="answer"
-              class="bg-surface-1 border-edge text-copy-sm text-primary h-6 flex-1 rounded border px-2 outline-none"
+              class="bg-surface-1 border-edge text-copy-sm text-primary h-6 flex-1 border px-2 outline-none"
               placeholder="Your answer..."
               :disabled="resolving"
             />

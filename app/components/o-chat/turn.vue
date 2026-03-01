@@ -153,7 +153,7 @@ async function copyResponse() {
   <div class="border-edge border-b py-5 last:border-b-0">
     <!-- User message -->
     <div class="px-5 pb-3">
-      <div class="bg-surface-1 inline-block max-w-full rounded-xl px-4 py-2.5">
+        <div class="bg-surface-1 inline-block max-w-full px-4 py-2.5">
         <p class="text-copy text-primary whitespace-pre-wrap break-words">{{ userText }}</p>
       </div>
     </div>
@@ -168,7 +168,7 @@ async function copyResponse() {
         </span>
         <button
           type="button"
-          class="text-tertiary hover:text-danger ml-auto grid size-5 place-items-center rounded transition-colors"
+          class="text-tertiary hover:text-danger ml-auto grid size-5 place-items-center transition-colors"
           title="Stop (Escape)"
           @click.stop="emit('abort')"
         >
@@ -183,7 +183,7 @@ async function copyResponse() {
       <div v-if="block.kind === 'text'" class="group/resp relative px-5 py-1">
         <button
           type="button"
-          class="absolute top-1 right-5 grid size-6 place-items-center rounded opacity-0 transition-opacity outline-none group-hover/resp:opacity-100"
+          class="absolute top-1 right-5 grid size-6 place-items-center opacity-0 transition-opacity outline-none group-hover/resp:opacity-100"
           :class="copied ? 'text-accent' : 'text-tertiary hover:text-secondary'"
           @click="copyResponse"
         >
@@ -214,7 +214,7 @@ async function copyResponse() {
         </span>
         <button
           type="button"
-          class="text-tertiary hover:text-danger ml-auto grid size-5 place-items-center rounded transition-colors"
+          class="text-tertiary hover:text-danger ml-auto grid size-5 place-items-center transition-colors"
           title="Stop (Escape)"
           @click.stop="emit('abort')"
         >

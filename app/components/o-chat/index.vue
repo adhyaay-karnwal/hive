@@ -117,7 +117,7 @@ watch(initializing, (val, old) => {
 
     <div class="shrink-0">
       <div class="mx-auto max-w-3xl px-4 pb-3">
-        <div class="bg-base-2 rounded-[14px] p-0.5">
+          <div class="bg-base-2 p-0.5">
           <OChatQuestion
             v-for="q in pendingQuestions"
             :key="q.id"
@@ -135,7 +135,7 @@ watch(initializing, (val, old) => {
             @remove="removeFromQueue"
           />
 
-          <div class="bg-base-3 border-edge rounded-xl border">
+            <div class="bg-base-3 border-edge border">
             <OChatInput
               :disabled="!connected"
               :placeholder="placeholder || 'Send a message...'"

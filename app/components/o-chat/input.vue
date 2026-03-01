@@ -92,7 +92,7 @@ defineExpose({ focus: focusInput });
       <div class="flex items-center gap-1">
         <button
           type="button"
-          class="text-copy-xs hover:bg-surface-3 flex items-center gap-1 rounded px-1.5 py-0.5 transition-colors outline-none"
+          class="text-copy-xs hover:bg-surface-3 flex items-center gap-1 px-1.5 py-0.5 transition-colors outline-none"
           :class="mode === 'plan' ? 'text-accent' : 'text-tertiary'"
           @click="toggleMode"
         >
@@ -108,7 +108,7 @@ defineExpose({ focus: focusInput });
         <button
           v-if="isWorking"
           type="button"
-          class="bg-danger text-danger-on grid size-6 place-items-center rounded-md transition-all hover:opacity-80"
+          class="bg-danger text-danger-on grid size-6 place-items-center transition-all hover:opacity-80"
           title="Stop generation (Escape)"
           @click="emit('abort')"
         >
@@ -117,7 +117,7 @@ defineExpose({ focus: focusInput });
         <button
           v-else
           type="button"
-          class="bg-inverse text-inverse grid size-6 place-items-center rounded-md transition-all"
+          class="bg-inverse text-inverse grid size-6 place-items-center transition-all"
           :class="!message.trim() || disabled ? 'opacity-20 scale-90' : 'hover:opacity-80'"
           @click="handleSend"
         >

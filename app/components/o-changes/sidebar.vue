@@ -133,7 +133,7 @@ const statusColors: Record<string, string> = {
         </span>
         <button
           type="button"
-          class="text-tertiary hover:text-primary grid size-6 place-items-center rounded outline-none"
+           class="text-tertiary hover:text-primary grid size-6 place-items-center outline-none"
           title="Refresh"
           @click="emit('refresh')"
         >
@@ -186,7 +186,7 @@ const statusColors: Record<string, string> = {
               <div class="flex w-full items-center gap-1 px-1.5 py-1">
                 <button
                   type="button"
-                  class="grid size-4 shrink-0 place-items-center rounded outline-none"
+                  class="grid size-4 shrink-0 place-items-center outline-none"
                   title="Mark as viewed"
                   @click.stop="emit('toggle-viewed', file.path)"
                 >
@@ -233,7 +233,7 @@ const statusColors: Record<string, string> = {
               <div class="flex w-full items-center gap-1 px-1.5 py-1">
                 <button
                   type="button"
-                  class="text-accent hover:text-primary grid size-4 shrink-0 place-items-center rounded outline-none"
+                  class="text-accent hover:text-primary grid size-4 shrink-0 place-items-center outline-none"
                   title="Mark as unviewed"
                   @click.stop="emit('toggle-viewed', file.path)"
                 >
@@ -299,7 +299,7 @@ const statusColors: Record<string, string> = {
       <div v-if="showCommitForm" class="flex flex-col gap-1.5">
         <textarea
           v-model="commitMessageInput"
-          class="text-copy-sm text-primary bg-surface-1 border-edge w-full resize-none rounded-md border p-2 outline-none focus:border-edge-strong"
+          class="text-copy-sm text-primary bg-surface-1 border-edge w-full resize-none border p-2 outline-none focus:border-edge-strong"
           rows="4"
           placeholder="Commit message..."
           :disabled="committing"

@@ -84,7 +84,7 @@ const isLoading = refDebounced(toRef(props, "loading"), 100);
     :is="to ? NuxtLink : 'button'"
     :type
     :to
-    class="relative flex min-w-fit cursor-default items-center justify-center gap-2 rounded-md text-sm whitespace-pre ring-focus outline-none select-none focus-visible:ring-2 focus-visible:ring-offset-2"
+    class="relative flex min-w-fit cursor-default items-center justify-center gap-2 text-sm whitespace-pre ring-focus outline-none select-none focus-visible:ring-2 focus-visible:ring-offset-2"
     :class="[
       sizeClass,
       variantClasses[variant],

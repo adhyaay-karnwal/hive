@@ -109,7 +109,7 @@ function closeTab(projectId: string, e: Event) {
           </NuxtLink>
           <button
             type="button"
-            class="text-tertiary hover:text-primary grid size-5 place-items-center rounded opacity-0 transition-opacity outline-none group-hover/h:opacity-100"
+            class="text-tertiary hover:text-primary grid size-5 place-items-center opacity-0 transition-opacity outline-none group-hover/h:opacity-100"
             :class="currentProjectId === proj!.id ? 'opacity-60' : ''"
             @click="closeTab(proj!.id, $event)"
           >

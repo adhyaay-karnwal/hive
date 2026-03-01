@@ -67,7 +67,7 @@ const groupedProfile = computed(() => {
             <div
               v-for="entry in entries"
               :key="entry.id"
-              class="bg-surface-1 border-edge flex items-center justify-between rounded-md border px-3 py-2"
+              class="bg-surface-1 border-edge flex items-center justify-between border px-3 py-2"
             >
               <div>
                 <span class="text-copy text-primary font-medium">{{ entry.key }}</span>
@@ -80,7 +80,7 @@ const groupedProfile = computed(() => {
 
         <div
           v-if="!profile?.length"
-          class="bg-surface-1 border-edge text-copy text-tertiary rounded-lg border p-8 text-center"
+          class="bg-surface-1 border-edge text-copy text-tertiary border p-8 text-center"
         >
           No preferences configured yet. Add some below.
         </div>
@@ -91,7 +91,7 @@ const groupedProfile = computed(() => {
             <div class="flex gap-2">
               <select
                 v-model="newEntry.category"
-                class="bg-surface-1 border-edge text-copy text-primary h-8 rounded-md border px-2"
+                class="bg-surface-1 border-edge text-copy text-primary h-8 border px-2"
               >
                 <option v-for="cat in categories" :key="cat" :value="cat">
                   {{ cat }}

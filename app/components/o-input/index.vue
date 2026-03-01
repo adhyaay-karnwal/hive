@@ -38,7 +38,7 @@ const hasTrailing = computed(() => !!trailing || !!slots.trailing);
 
 <template>
   <div
-    class="bg-surface-1 border-edge text-primary text-copy has-[:focus]:bg-base has-[:focus]:border-edge-strong flex h-8 overflow-hidden rounded-md border leading-none transition-all outline-none"
+    class="bg-surface-1 border-edge text-primary text-copy has-[:focus]:bg-base has-[:focus]:border-edge-strong flex h-8 overflow-hidden border leading-none transition-all outline-none"
     :class="[
       disabled
         ? 'bg-surface-2 cursor-not-allowed opacity-50'

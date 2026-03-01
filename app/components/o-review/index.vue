@@ -72,7 +72,7 @@ async function addComment(content: string) {
         </div>
 
         <span
-          class="text-copy-sm rounded px-2 py-0.5 font-medium"
+          class="text-copy-sm px-2 py-0.5 font-medium"
           :class="{
             'bg-success-subtle text-success': review.status === 'approved',
             'bg-warn-subtle text-warn': review.status === 'user_review',

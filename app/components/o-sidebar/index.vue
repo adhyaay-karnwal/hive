@@ -146,7 +146,7 @@ async function toggleDevServer(wt: any) {
             <div class="flex items-center gap-1.5">
               <button
                 type="button"
-                class="text-tertiary hover:text-primary grid size-5 place-items-center rounded"
+                class="text-tertiary hover:text-primary grid size-5 place-items-center"
                 :title="
                   wt.devServerActive
                     ? 'Stop dev server'
@@ -177,7 +177,7 @@ async function toggleDevServer(wt: any) {
         <template #trailing>
           <span
             v-if="pendingSignals?.length"
-            class="bg-warn text-warn-on text-copy-xs grid size-4 place-items-center rounded-full font-medium"
+            class="bg-warn text-warn-on text-copy-xs grid size-4 place-items-center font-medium"
           >
             {{ pendingSignals.length }}
           </span>

@@ -44,7 +44,7 @@ const isSelectedFileViewed = computed(() =>
       <template #trailing>
         <span
           v-if="projectData?.pkgManager"
-          class="bg-surface-1 border-edge text-copy-sm text-secondary rounded border px-2 py-0.5"
+          class="bg-surface-1 border-edge text-copy-sm text-secondary border px-2 py-0.5"
         >
           {{ projectData.pkgManager }}
         </span>

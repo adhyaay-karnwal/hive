@@ -47,7 +47,7 @@ function selectOption(opt: string) {
             v-for="opt in (signal.options as string[])"
             :key="opt"
             type="button"
-            class="bg-base-3 border-edge text-copy-sm text-primary hover:bg-surface-1 rounded-md border px-2.5 py-1 transition-colors"
+            class="bg-base-3 border-edge text-copy-sm text-primary hover:bg-surface-1 border px-2.5 py-1 transition-colors"
             @click="selectOption(opt)"
           >
             {{ opt }}
@@ -57,13 +57,13 @@ function selectOption(opt: string) {
         <div v-else class="mt-2 flex gap-1.5">
           <input
             v-model="answer"
-            class="text-copy-sm text-primary placeholder:text-tertiary bg-base-3 border-edge h-7 min-w-0 flex-1 rounded-md border px-2.5 outline-none"
+            class="text-copy-sm text-primary placeholder:text-tertiary bg-base-3 border-edge h-7 min-w-0 flex-1 border px-2.5 outline-none"
             placeholder="Type your answer..."
             @keydown.enter.prevent="submit"
           />
           <button
             type="button"
-            class="bg-inverse text-inverse grid size-7 shrink-0 place-items-center rounded-md transition-all"
+            class="bg-inverse text-inverse grid size-7 shrink-0 place-items-center transition-all"
             :class="!answer.trim() ? 'opacity-20 scale-90' : 'hover:opacity-80'"
             @click="submit"
           >

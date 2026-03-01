@@ -51,7 +51,7 @@ const totalDeletions = computed(() => {
         </span>
         <span
           v-if="!hasDiff && hasContent"
-          class="text-copy-xs text-tertiary shrink-0 rounded bg-surface-1 px-1.5 py-0.5"
+          class="text-copy-xs text-tertiary shrink-0 bg-surface-1 px-1.5 py-0.5"
         >
           new file
         </span>
@@ -66,11 +66,11 @@ const totalDeletions = computed(() => {
         <!-- Viewed toggle -->
         <button
           type="button"
-          class="bg-surface-1 text-primary hover:bg-surface-2 border-edge flex h-7 items-center gap-2 rounded-md border px-3 text-sm shadow-xs outline-none active:bg-surface-3"
+          class="bg-surface-1 text-primary hover:bg-surface-2 border-edge flex h-7 items-center gap-2 border px-3 text-sm shadow-xs outline-none active:bg-surface-3"
           @click="emit('toggle-viewed')"
         >
            <div
-            class="grid size-3.5 shrink-0 place-items-center rounded border"
+            class="grid size-3.5 shrink-0 place-items-center border"
             :class="props.viewed ? 'bg-accent border-accent' : 'border-edge-strong'"
           >
             <CheckIcon v-if="props.viewed" class="size-2.5 text-white" />
@@ -81,7 +81,7 @@ const totalDeletions = computed(() => {
         <!-- Close button -->
         <button
           type="button"
-          class="text-tertiary hover:text-primary grid size-6 place-items-center rounded outline-none"
+          class="text-tertiary hover:text-primary grid size-6 place-items-center outline-none"
           title="Close (Escape)"
           @click="emit('close')"
         >

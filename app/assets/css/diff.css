@@ -26,7 +26,7 @@
   --diff-bg-selection-number: color-mix(in lab, var(--diff-bg) 60%, var(--diff-selection-base));
   --diff-selection-number-fg: color-mix(in lab, var(--diff-selection-base) 75%, white);
 
-  --diff-font: 'SF Mono', Monaco, Consolas, 'Ubuntu Mono', 'Liberation Mono', 'Courier New', monospace;
+  --diff-font: 'JetBrains Mono', monospace;
   --diff-font-size: 13px;
   --diff-line-height: 20px;
 }
