@@ -42,7 +42,7 @@ const maxWidthClasses: Record<Size, string> = {
       >
         <div class="bg-base-3 border-edge border">
           <DialogTitle
-            class="text-primary border-edge border-b px-4 py-3 text-sm font-medium"
+            class="text-primary border-edge border-b px-4 py-3 text-copy font-medium"
           >
             <slot name="title" />
           </DialogTitle>

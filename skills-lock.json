@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "vueuse": {
+      "source": "onmax/nuxt-skills",
+      "sourceType": "github",
+      "computedHash": "2cfd4dfa6533d22bb857d4cd71af7c6f3745f85e94bc08713ca1e1c084786fcc"
+    }
+  }
+}

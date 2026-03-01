@@ -57,14 +57,14 @@ async function addComment(content: string) {
         <div class="flex items-center gap-1">
           <OButton
             variant="transparent"
-            size="xs"
+           
             :icon-left="AlignJustifyIcon"
             :class="layout === 'unified' ? 'text-primary' : ''"
             @click="layout = 'unified'"
           />
           <OButton
             variant="transparent"
-            size="xs"
+           
             :icon-left="SplitIcon"
             :class="layout === 'split' ? 'text-primary' : ''"
             @click="layout = 'split'"
@@ -72,7 +72,7 @@ async function addComment(content: string) {
         </div>
 
         <span
-          class="text-copy-sm px-2 py-0.5 font-medium"
+          class="text-copy px-2 py-0.5 font-medium"
           :class="{
             'bg-success-subtle text-success': review.status === 'approved',
             'bg-warn-subtle text-warn': review.status === 'user_review',
@@ -87,7 +87,7 @@ async function addComment(content: string) {
     <div class="flex min-h-0 flex-1">
       <!-- File tree sidebar -->
       <div class="border-edge w-56 shrink-0 overflow-auto border-r p-1.5">
-        <p class="text-copy-xs text-tertiary mb-1 px-2 font-medium uppercase">
+        <p class="text-copy text-tertiary mb-1 px-2 font-medium uppercase">
           Changed Files ({{ review.changedFiles?.length || 0 }})
         </p>
         <OReviewFileTree
@@ -112,7 +112,7 @@ async function addComment(content: string) {
     <div class="border-edge flex items-center justify-between border-t p-3">
       <div class="flex-1">
         <!-- Agent summary -->
-        <p v-if="review.summary" class="text-copy-sm text-secondary line-clamp-2">
+        <p v-if="review.summary" class="text-copy text-secondary line-clamp-2">
           {{ review.summary }}
         </p>
       </div>
@@ -127,7 +127,7 @@ async function addComment(content: string) {
         <OButton
           v-if="review.status !== 'approved'"
           variant="primary"
-          size="md"
+         
           :icon-left="CheckIcon"
           :loading="approving"
           @click="approve"

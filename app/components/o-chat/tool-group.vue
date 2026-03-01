@@ -34,17 +34,16 @@ watch(hasRunning, (running) => {
 
 <template>
   <div class="px-5 py-1">
-    <button
-      type="button"
-      class="text-copy-sm text-tertiary hover:text-secondary flex items-center gap-1.5 outline-none"
+    <OButton
+      variant="transparent"
+     
+      :icon-left="ChevronDownIcon"
+      class="[&_svg]:transition-transform"
+      :class="expanded ? '' : '[&_svg]:-rotate-90'"
       @click="expanded = !expanded"
     >
-      <ChevronDownIcon
-        class="size-3.5 transition-transform"
-        :class="expanded ? '' : '-rotate-90'"
-      />
-      <span>{{ tools.length }} step{{ tools.length === 1 ? "" : "s" }}</span>
-    </button>
+      {{ tools.length }} step{{ tools.length === 1 ? "" : "s" }}
+    </OButton>
 
     <div v-if="expanded" class="mt-1 flex flex-col">
       <OChatToolCall

@@ -44,18 +44,18 @@ const isSelectedFileViewed = computed(() =>
       <template #trailing>
         <span
           v-if="projectData?.pkgManager"
-          class="bg-surface-1 border-edge text-copy-sm text-secondary border px-2 py-0.5"
+          class="bg-surface-1 border-edge text-copy text-secondary border px-2 py-0.5"
         >
           {{ projectData.pkgManager }}
         </span>
-        <span v-if="port" class="text-copy-xs text-tertiary font-mono">
+        <span v-if="port" class="text-copy text-tertiary font-mono">
           :{{ port }}
         </span>
       </template>
     </OHeader>
 
     <div v-if="initializing" class="flex flex-1 items-center justify-center gap-2">
-      <ArrowPathIcon class="text-tertiary size-4 animate-spin" />
+      <ArrowPathIcon class="text-tertiary size-4 shrink-0 animate-spin" />
       <span class="text-copy text-tertiary">Starting agent...</span>
     </div>
 
@@ -64,7 +64,7 @@ const isSelectedFileViewed = computed(() =>
         <p class="text-copy text-danger">{{ error }}</p>
         <OButton
           variant="primary"
-          size="md"
+         
           class="mt-3"
           @click="store.activate(projectId)"
         >

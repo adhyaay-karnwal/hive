@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { ArrowUpIcon, StopIcon } from "@heroicons/vue/16/solid";
+import { ArrowUpIcon, StopIcon, PaperClipIcon, XMarkIcon } from "@heroicons/vue/16/solid";
 
 type Mode = "build" | "plan";
+
+type AttachedFile = { name: string; mime: string; url: string };
 
 type Props = {
   disabled?: boolean;
@@ -9,10 +11,11 @@ type Props = {
   isWorking?: boolean;
   modelName?: string;
   mode?: Mode;
+  supportsAttachment?: boolean;
 };
 
 type Emits = {
-  send: [message: string];
+  send: [payload: { text: string; files: AttachedFile[] }];
   abort: [];
   "update:mode": [mode: Mode];
 };
@@ -23,18 +26,22 @@ const {
   isWorking = false,
   modelName = "",
   mode = "build",
+  supportsAttachment = false,
 } = defineProps<Props>();
 
 const emit = defineEmits<Emits>();
 
 const message = ref("");
 const inputRef = ref<HTMLTextAreaElement>();
+const fileInputRef = ref<HTMLInputElement>();
+const attachedFiles = ref<AttachedFile[]>([]);
 
 function handleSend() {
   const trimmed = message.value.trim();
   if (!trimmed || disabled) return;
-  emit("send", trimmed);
+  emit("send", { text: trimmed, files: attachedFiles.value });
   message.value = "";
+  attachedFiles.value = [];
   nextTick(() => {
     if (inputRef.value) inputRef.value.style.height = "auto";
   });
@@ -69,6 +76,36 @@ function focusInput() {
   inputRef.value?.focus();
 }
 
+function openFilePicker() {
+  fileInputRef.value?.click();
+}
+
+async function onFilesSelected(e: Event) {
+  const input = e.target as HTMLInputElement;
+  if (!input.files?.length) return;
+
+  for (const file of Array.from(input.files)) {
+    const url = await readFileAsDataUrl(file);
+    attachedFiles.value.push({ name: file.name, mime: file.type, url });
+  }
+
+  // Reset so the same file can be picked again
+  input.value = "";
+}
+
+function removeFile(index: number) {
+  attachedFiles.value.splice(index, 1);
+}
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 defineExpose({ focus: focusInput });
 </script>
 
@@ -77,6 +114,23 @@ defineExpose({ focus: focusInput });
     class="overflow-hidden"
     :class="disabled ? 'opacity-40' : ''"
   >
+    <!-- Attached file previews -->
+    <div v-if="attachedFiles.length" class="flex flex-wrap gap-1.5 px-3 pt-2">
+      <div
+        v-for="(file, i) in attachedFiles"
+        :key="i"
+        class="border-edge bg-surface-1 flex items-center gap-1 border px-2 py-0.5"
+      >
+        <span class="text-copy text-secondary max-w-32 truncate">{{ file.name }}</span>
+        <OButton
+          variant="transparent"
+          :icon-left="XMarkIcon"
+          class="text-tertiary"
+          @click="removeFile(i)"
+        />
+      </div>
+    </div>
+
     <textarea
       ref="inputRef"
       v-model="message"
@@ -90,40 +144,54 @@ defineExpose({ focus: focusInput });
 
     <div class="flex items-center justify-between px-2.5 pb-2">
       <div class="flex items-center gap-1">
-        <button
-          type="button"
-          class="text-copy-xs hover:bg-surface-3 flex items-center gap-1 px-1.5 py-0.5 transition-colors outline-none"
-          :class="mode === 'plan' ? 'text-accent' : 'text-tertiary'"
+        <OButton
+          variant="transparent"
+          :class="mode === 'plan' ? 'text-accent' : ''"
           @click="toggleMode"
         >
           {{ mode === "build" ? "Build" : "Plan" }}
-        </button>
+        </OButton>
 
-        <span v-if="modelName" class="text-copy-xs text-tertiary font-mono">
+        <span v-if="modelName" class="text-copy text-tertiary font-mono">
           {{ modelName }}
         </span>
       </div>
 
       <div class="flex items-center gap-1.5">
-        <button
+        <OButton
+          v-if="supportsAttachment"
+          variant="transparent"
+          :icon-left="PaperClipIcon"
+          title="Attach file"
+          @click="openFilePicker"
+        />
+
+        <OButton
           v-if="isWorking"
-          type="button"
-          class="bg-danger text-danger-on grid size-6 place-items-center transition-all hover:opacity-80"
+          variant="danger-solid"
+          :icon-left="StopIcon"
           title="Stop generation (Escape)"
           @click="emit('abort')"
-        >
-          <StopIcon class="size-3" />
-        </button>
-        <button
+        />
+        <OButton
           v-else
-          type="button"
-          class="bg-inverse text-inverse grid size-6 place-items-center transition-all"
-          :class="!message.trim() || disabled ? 'opacity-20 scale-90' : 'hover:opacity-80'"
+          variant="inverse"
+          :icon-left="ArrowUpIcon"
+          :class="!message.trim() || disabled ? 'opacity-20 scale-90' : ''"
           @click="handleSend"
-        >
-          <ArrowUpIcon class="size-3.5" />
-        </button>
+        />
       </div>
     </div>
+
+    <!-- Hidden file input -->
+    <input
+      v-if="supportsAttachment"
+      ref="fileInputRef"
+      type="file"
+      multiple
+      accept="image/*,.pdf"
+      class="hidden"
+      @change="onFilesSelected"
+    />
   </div>
 </template>

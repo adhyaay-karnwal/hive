@@ -33,6 +33,6 @@ const statusLabels: Record<Status, string> = {
         status === 'working' ? 'animate-pulse' : '',
       ]"
     />
-    <span class="text-copy-sm text-tertiary">{{ statusLabels[status] }}</span>
+    <span class="text-copy text-tertiary">{{ statusLabels[status] }}</span>
   </div>
 </template>

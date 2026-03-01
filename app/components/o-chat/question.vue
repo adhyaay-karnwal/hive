@@ -38,37 +38,36 @@ function selectOption(opt: string) {
 <template>
   <div class="px-3 py-2.5">
     <div class="flex items-start gap-2">
-      <QuestionMarkCircleIcon class="text-warn mt-0.5 size-4 shrink-0" />
+      <QuestionMarkCircleIcon class="text-warn mt-0.5 size-4 shrink-0 flex-shrink-0" />
       <div class="min-w-0 flex-1">
-        <p class="text-copy-sm text-primary">{{ signal.content }}</p>
+        <p class="text-copy text-primary">{{ signal.content }}</p>
 
         <div v-if="signal.options?.length" class="mt-2 flex flex-wrap gap-1">
-          <button
+          <OButton
             v-for="opt in (signal.options as string[])"
             :key="opt"
-            type="button"
-            class="bg-base-3 border-edge text-copy-sm text-primary hover:bg-surface-1 border px-2.5 py-1 transition-colors"
+            variant="outline"
+           
             @click="selectOption(opt)"
           >
             {{ opt }}
-          </button>
+          </OButton>
         </div>
 
         <div v-else class="mt-2 flex gap-1.5">
           <input
             v-model="answer"
-            class="text-copy-sm text-primary placeholder:text-tertiary bg-base-3 border-edge h-7 min-w-0 flex-1 border px-2.5 outline-none"
+            class="text-copy text-primary placeholder:text-tertiary bg-base-3 border-edge h-7 min-w-0 flex-1 border px-2.5 outline-none"
             placeholder="Type your answer..."
             @keydown.enter.prevent="submit"
           />
-          <button
-            type="button"
-            class="bg-inverse text-inverse grid size-7 shrink-0 place-items-center transition-all"
-            :class="!answer.trim() ? 'opacity-20 scale-90' : 'hover:opacity-80'"
+          <OButton
+            variant="inverse"
+           
+            :icon-left="ArrowUpIcon"
+            :class="!answer.trim() ? 'opacity-20 scale-90' : ''"
             @click="submit"
-          >
-            <ArrowUpIcon class="size-3.5" />
-          </button>
+          />
         </div>
       </div>
     </div>

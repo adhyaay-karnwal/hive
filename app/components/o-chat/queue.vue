@@ -20,16 +20,16 @@ const emit = defineEmits<Emits>();
       :key="i"
       class="group/q flex items-start gap-2"
     >
-      <p class="text-copy-sm text-secondary min-w-0 flex-1 truncate py-0.5">
+      <p class="text-copy text-secondary min-w-0 flex-1 truncate py-0.5">
         {{ msg }}
       </p>
-      <button
-        type="button"
-        class="text-tertiary hover:text-primary grid size-5 shrink-0 place-items-center opacity-0 transition-opacity outline-none group-hover/q:opacity-100"
+      <OButton
+        variant="transparent"
+       
+        :icon-left="XMarkIcon"
+        class="shrink-0 opacity-0 transition-opacity group-hover/q:opacity-100"
         @click="emit('remove', i)"
-      >
-        <XMarkIcon class="size-3" />
-      </button>
+      />
     </div>
   </div>
 </template>

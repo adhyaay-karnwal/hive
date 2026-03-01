@@ -46,47 +46,42 @@ const totalDeletions = computed(() => {
     <!-- File header -->
     <div class="border-edge flex h-10 shrink-0 items-center justify-between border-b px-3">
       <div class="flex min-w-0 items-center gap-2">
-        <span class="text-copy-sm text-primary truncate font-mono">
+        <span class="text-copy text-primary truncate font-mono">
           {{ props.filePath }}
         </span>
         <span
           v-if="!hasDiff && hasContent"
-          class="text-copy-xs text-tertiary shrink-0 bg-surface-1 px-1.5 py-0.5"
+          class="text-copy text-tertiary shrink-0 bg-surface-1 px-1.5 py-0.5"
         >
           new file
         </span>
-        <span v-if="totalDeletions" class="text-copy-xs shrink-0 font-mono" style="color: var(--diff-deletion-base, #ff2e3f)">
+        <span v-if="totalDeletions" class="text-copy shrink-0 font-mono" style="color: var(--diff-deletion-base, #ff2e3f)">
           -{{ totalDeletions }}
         </span>
-        <span v-if="totalAdditions" class="text-copy-xs shrink-0 font-mono" style="color: var(--diff-addition-base, #00cab1)">
+        <span v-if="totalAdditions" class="text-copy shrink-0 font-mono" style="color: var(--diff-addition-base, #00cab1)">
           +{{ totalAdditions }}
         </span>
       </div>
       <div class="flex shrink-0 items-center gap-2">
         <!-- Viewed toggle -->
-        <button
-          type="button"
-          class="bg-surface-1 text-primary hover:bg-surface-2 border-edge flex h-7 items-center gap-2 border px-3 text-sm shadow-xs outline-none active:bg-surface-3"
+        <OButton
+          variant="primary"
+         
+          :icon-left="props.viewed ? CheckIcon : undefined"
+          :class="props.viewed ? 'text-accent' : ''"
           @click="emit('toggle-viewed')"
         >
-           <div
-            class="grid size-3.5 shrink-0 place-items-center border"
-            :class="props.viewed ? 'bg-accent border-accent' : 'border-edge-strong'"
-          >
-            <CheckIcon v-if="props.viewed" class="size-2.5 text-white" />
-          </div>
           Viewed
-        </button>
+        </OButton>
 
         <!-- Close button -->
-        <button
-          type="button"
-          class="text-tertiary hover:text-primary grid size-6 place-items-center outline-none"
+        <OButton
+          variant="transparent"
+         
+          :icon-left="XMarkIcon"
           title="Close (Escape)"
           @click="emit('close')"
-        >
-          <XMarkIcon class="size-4" />
-        </button>
+        />
       </div>
     </div>
 
@@ -112,11 +107,11 @@ const totalDeletions = computed(() => {
         v-else-if="props.loadingContent"
         class="flex h-full items-center justify-center gap-2"
       >
-        <ArrowPathIcon class="text-tertiary size-4 animate-spin" />
-        <span class="text-copy-sm text-tertiary">Loading file...</span>
+        <ArrowPathIcon class="text-tertiary size-4 shrink-0 animate-spin" />
+        <span class="text-copy text-tertiary">Loading file...</span>
       </div>
 
-      <div v-else class="text-copy-sm text-tertiary flex h-full items-center justify-center">
+      <div v-else class="text-copy text-tertiary flex h-full items-center justify-center">
         No content available
       </div>
     </div>

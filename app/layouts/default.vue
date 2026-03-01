@@ -25,13 +25,13 @@ const { isDark, toggleTheme } = useTheme();
       <div class="flex shrink-0 items-center gap-1 pr-2">
         <OButton
           variant="transparent"
-          size="xs"
+         
           :icon-left="isDark ? SunIcon : MoonIcon"
           @click="toggleTheme()"
         />
         <OButton
           variant="transparent"
-          size="xs"
+         
           :icon-left="Cog6ToothIcon"
           to="/settings"
         />

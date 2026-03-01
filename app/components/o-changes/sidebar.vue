@@ -127,34 +127,34 @@ const statusColors: Record<string, string> = {
       <template #trailing>
         <span
           v-if="files.length"
-          class="text-copy-xs text-tertiary"
+          class="text-copy text-tertiary"
         >
           {{ stagedFiles.length }}/{{ files.length }}
         </span>
-        <button
-          type="button"
-           class="text-tertiary hover:text-primary grid size-6 place-items-center outline-none"
+        <OButton
+          variant="transparent"
+         
+          :icon-left="ArrowPathIcon"
+          :class="loading ? '[&_svg]:animate-spin' : ''"
           title="Refresh"
           @click="emit('refresh')"
-        >
-          <ArrowPathIcon class="size-3.5" :class="loading ? 'animate-spin' : ''" />
-        </button>
+        />
       </template>
     </OHeader>
 
     <div class="flex-1 overflow-auto p-1.5">
       <div
         v-if="!files.length && !loading"
-        class="text-copy-sm text-tertiary px-2 py-4 text-center"
-      >
-        No changes
-      </div>
+        class="text-copy text-tertiary px-2 py-4 text-center"
+        >
+          No changes
+        </div>
 
       <div
         v-if="loading && !files.length"
-        class="text-copy-sm text-tertiary flex items-center justify-center gap-2 px-2 py-4"
+        class="text-copy text-tertiary flex items-center justify-center gap-2 px-2 py-4"
       >
-        <ArrowPathIcon class="size-3.5 animate-spin" />
+        <ArrowPathIcon class="size-4 animate-spin" />
         Loading...
       </div>
 
@@ -162,18 +162,18 @@ const statusColors: Record<string, string> = {
         <!-- Unstaged files -->
         <div v-if="unstagedFiles.length">
           <div class="mb-1 flex items-center justify-between px-2">
-            <p class="text-copy-xs text-tertiary font-medium uppercase">
+            <p class="text-copy text-tertiary font-medium uppercase">
               Unstaged ({{ unstagedFiles.length }})
             </p>
-            <button
-              type="button"
-              class="text-tertiary hover:text-accent flex items-center gap-0.5 outline-none"
+            <OButton
+              variant="transparent"
+             
+              :icon-left="CheckIcon"
               title="Stage all"
               @click="emit('stage-all')"
             >
-              <CheckIcon class="size-3" />
-              <span class="text-copy-xs">All</span>
-            </button>
+              All
+            </OButton>
           </div>
           <div class="flex flex-col gap-0.5">
             <OHover
@@ -184,29 +184,29 @@ const statusColors: Record<string, string> = {
               class="group/file cursor-default"
             >
               <div class="flex w-full items-center gap-1 px-1.5 py-1">
-                <button
-                  type="button"
-                  class="grid size-4 shrink-0 place-items-center outline-none"
+                <OButton
+                  variant="transparent"
+                 
+                  :icon-left="DocumentIcon"
+                  class="shrink-0 [&_svg]:text-tertiary group-hover/file:[&_svg]:text-accent"
                   title="Mark as viewed"
                   @click.stop="emit('toggle-viewed', file.path)"
-                >
-                  <DocumentIcon class="text-tertiary size-3 group-hover/file:hidden" />
-                  <PlusIcon class="text-accent size-3 hidden group-hover/file:block" />
-                </button>
-                <button
-                  type="button"
-                  class="text-copy-sm text-primary min-w-0 flex-1 truncate text-left outline-none"
+                />
+                <OButton
+                  variant="transparent"
+                 
+                  class="min-w-0 flex-1 justify-start truncate"
                   @click="emit('select-file', file.path)"
                 >
                   {{ file.path.split("/").pop() }}
-                </button>
+                </OButton>
                 <ChatBubbleLeftIcon
                   v-if="commentsByFile.get(file.path)"
-                  class="text-accent size-3 shrink-0"
+                  class="text-accent size-4 shrink-0"
                   :title="`${commentsByFile.get(file.path)} comment${commentsByFile.get(file.path)! > 1 ? 's' : ''}`"
                 />
                 <span
-                  class="text-copy-xs shrink-0 font-mono"
+                  class="text-copy shrink-0 font-mono"
                   :class="statusColors[file.status] || 'text-tertiary'"
                   :title="statusLabels[file.status] || file.status"
                 >
@@ -219,7 +219,7 @@ const statusColors: Record<string, string> = {
 
         <!-- Staged / Viewed files -->
         <div v-if="stagedFiles.length" :class="unstagedFiles.length ? 'mt-3' : ''">
-          <p class="text-copy-xs text-tertiary mb-1 px-2 font-medium uppercase">
+          <p class="text-copy text-tertiary mb-1 px-2 font-medium uppercase">
             Viewed ({{ stagedFiles.length }})
           </p>
           <div class="flex flex-col gap-0.5">
@@ -231,28 +231,29 @@ const statusColors: Record<string, string> = {
               class="cursor-default"
             >
               <div class="flex w-full items-center gap-1 px-1.5 py-1">
-                <button
-                  type="button"
-                  class="text-accent hover:text-primary grid size-4 shrink-0 place-items-center outline-none"
+                <OButton
+                  variant="transparent"
+                 
+                  :icon-left="CheckIcon"
+                  class="shrink-0 text-accent hover:text-primary"
                   title="Mark as unviewed"
                   @click.stop="emit('toggle-viewed', file.path)"
-                >
-                  <CheckIcon class="size-3" />
-                </button>
-                <button
-                  type="button"
-                  class="text-copy-sm text-tertiary min-w-0 flex-1 truncate text-left outline-none"
+                />
+                <OButton
+                  variant="transparent"
+                 
+                  class="min-w-0 flex-1 justify-start truncate text-tertiary"
                   @click="emit('select-file', file.path)"
                 >
                   {{ file.path.split("/").pop() }}
-                </button>
+                </OButton>
                 <ChatBubbleLeftIcon
                   v-if="commentsByFile.get(file.path)"
-                  class="text-accent size-3 shrink-0 opacity-50"
+                  class="text-accent size-4 shrink-0 opacity-50"
                   :title="`${commentsByFile.get(file.path)} comment${commentsByFile.get(file.path)! > 1 ? 's' : ''}`"
                 />
                 <span
-                  class="text-copy-xs shrink-0 font-mono opacity-50"
+                  class="text-copy shrink-0 font-mono opacity-50"
                   :class="statusColors[file.status] || 'text-tertiary'"
                 >
                   {{ file.status }}
@@ -267,14 +268,14 @@ const statusColors: Record<string, string> = {
     <!-- Review actions -->
     <div v-if="files.length" class="border-edge flex flex-col gap-1.5 border-t p-2">
       <!-- Comment count + request changes -->
-      <div v-if="commentCount && !showCommitForm" class="text-copy-xs text-tertiary flex items-center gap-1 px-0.5">
-        <ChatBubbleLeftIcon class="size-3" />
+      <div v-if="commentCount && !showCommitForm" class="text-copy text-tertiary flex items-center gap-1 px-0.5">
+        <ChatBubbleLeftIcon class="size-4" />
         {{ commentCount }} comment{{ commentCount !== 1 ? "s" : "" }} pending
       </div>
       <OButton
         v-if="commentCount && !showCommitForm"
         variant="primary"
-        size="md"
+       
         class="w-full"
         @click="emit('request-changes')"
       >
@@ -285,7 +286,7 @@ const statusColors: Record<string, string> = {
       <OButton
         v-if="!showCommitForm"
         variant="transparent"
-        size="md"
+       
         class="w-full"
         :icon-left="CheckCircleIcon"
         :disabled="!allViewed"
@@ -299,20 +300,20 @@ const statusColors: Record<string, string> = {
       <div v-if="showCommitForm" class="flex flex-col gap-1.5">
         <textarea
           v-model="commitMessageInput"
-          class="text-copy-sm text-primary bg-surface-1 border-edge w-full resize-none border p-2 outline-none focus:border-edge-strong"
+          class="text-copy text-primary bg-surface-1 border-edge w-full resize-none border p-2 outline-none focus:border-edge-strong"
           rows="4"
           placeholder="Commit message..."
           :disabled="committing"
           @keydown.enter.meta.prevent="handleCommit"
           @keydown.escape.prevent="cancelCommit"
         />
-        <p v-if="commitError" class="text-copy-xs text-danger px-0.5">
+        <p v-if="commitError" class="text-copy text-danger px-0.5">
           {{ commitError }}
         </p>
         <div class="flex gap-1.5">
           <OButton
             variant="transparent"
-            size="sm"
+           
             class="flex-1"
             :disabled="committing"
             @click="cancelCommit"
@@ -321,7 +322,7 @@ const statusColors: Record<string, string> = {
           </OButton>
           <OButton
             variant="primary"
-            size="sm"
+           
             class="flex-1"
             :disabled="!commitMessageInput.trim() || committing"
             :loading="committing"

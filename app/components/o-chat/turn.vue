@@ -161,19 +161,19 @@ async function copyResponse() {
     <!-- Working indicator -->
     <div v-if="isWorking && !blocks.length" class="px-5 py-1">
       <div class="flex items-center gap-1.5">
-        <ArrowPathIcon class="text-accent size-3.5 animate-spin" />
-        <span class="text-copy-sm text-secondary">{{ statusText }}</span>
-        <span v-if="formattedDuration" class="text-copy-sm text-tertiary font-mono">
+        <ArrowPathIcon class="text-accent size-4 animate-spin" />
+        <span class="text-copy text-secondary">{{ statusText }}</span>
+        <span v-if="formattedDuration" class="text-copy text-tertiary font-mono">
           · {{ formattedDuration }}
         </span>
-        <button
-          type="button"
-          class="text-tertiary hover:text-danger ml-auto grid size-5 place-items-center transition-colors"
+        <OButton
+          variant="transparent"
+         
+          :icon-left="StopIcon"
+          class="ml-auto hover:text-danger"
           title="Stop (Escape)"
           @click.stop="emit('abort')"
-        >
-          <StopIcon class="size-3" />
-        </button>
+        />
       </div>
     </div>
 
@@ -181,14 +181,14 @@ async function copyResponse() {
     <template v-for="(block, blockIdx) in blocks" :key="block.id">
       <!-- Text block -->
       <div v-if="block.kind === 'text'" class="group/resp relative px-5 py-1">
-        <button
-          type="button"
-          class="absolute top-1 right-5 grid size-6 place-items-center opacity-0 transition-opacity outline-none group-hover/resp:opacity-100"
-          :class="copied ? 'text-accent' : 'text-tertiary hover:text-secondary'"
+        <OButton
+          variant="transparent"
+         
+          :icon-left="copied ? CheckIcon : ClipboardIcon"
+          class="absolute top-0 right-5 opacity-0 transition-opacity group-hover/resp:opacity-100"
+          :class="copied ? 'text-accent' : ''"
           @click="copyResponse"
-        >
-          <component :is="copied ? CheckIcon : ClipboardIcon" class="size-3.5" />
-        </button>
+        />
         <OChatMarkdown :content="block.text" />
       </div>
 
@@ -207,19 +207,19 @@ async function copyResponse() {
     <!-- Working indicator when actively streaming after existing blocks -->
     <div v-if="isWorking && blocks.length" class="px-5 py-1">
       <div class="flex items-center gap-1.5">
-        <ArrowPathIcon class="text-accent size-3.5 animate-spin" />
-        <span class="text-copy-sm text-secondary">{{ statusText }}</span>
-        <span v-if="formattedDuration" class="text-copy-sm text-tertiary font-mono">
+        <ArrowPathIcon class="text-accent size-4 animate-spin" />
+        <span class="text-copy text-secondary">{{ statusText }}</span>
+        <span v-if="formattedDuration" class="text-copy text-tertiary font-mono">
           · {{ formattedDuration }}
         </span>
-        <button
-          type="button"
-          class="text-tertiary hover:text-danger ml-auto grid size-5 place-items-center transition-colors"
+        <OButton
+          variant="transparent"
+         
+          :icon-left="StopIcon"
+          class="ml-auto hover:text-danger"
           title="Stop (Escape)"
           @click.stop="emit('abort')"
-        >
-          <StopIcon class="size-3" />
-        </button>
+        />
       </div>
     </div>
   </div>

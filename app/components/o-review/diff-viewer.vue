@@ -42,7 +42,7 @@ async function renderDiff() {
     console.error("Failed to render diff:", e);
     // Fallback: render raw diff
     const pre = document.createElement("pre");
-    pre.className = "text-xs font-mono p-4 overflow-auto";
+    pre.className = "text-copy font-mono p-4 overflow-auto";
     pre.textContent = diff;
     containerRef.value!.appendChild(pre);
   }

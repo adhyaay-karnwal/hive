@@ -79,43 +79,43 @@ const output = computed(() => {
 <template>
   <button
     type="button"
-    class="group/tc flex w-full items-center gap-2 px-2 py-1 text-left transition-colors outline-none"
-    :class="expanded ? 'bg-surface-1' : 'hover:bg-surface-1/50'"
+    class="group/tc flex w-full items-center gap-2 px-2 py-1 text-left outline-none transition-colors hover:bg-surface-1/50"
+    :class="expanded ? 'bg-surface-1' : ''"
     @click="expanded = !expanded"
   >
     <component
       :is="def.icon"
-      class="size-3.5 shrink-0"
+      class="size-4 shrink-0"
       :class="{
         'text-tertiary': part.state?.status === 'completed',
         'text-accent': part.state?.status === 'running' || part.state?.status === 'pending',
         'text-danger': part.state?.status === 'error',
       }"
     />
-    <span class="text-copy-sm text-secondary shrink-0">{{ def.name }}</span>
-    <span class="text-copy-sm text-tertiary min-w-0 flex-1 truncate font-mono">{{ subtitle }}</span>
-    <span v-if="duration" class="text-copy-xs text-tertiary shrink-0 font-mono">{{ duration }}</span>
+    <span class="text-copy text-secondary shrink-0">{{ def.name }}</span>
+    <span class="text-copy text-tertiary min-w-0 flex-1 truncate font-mono">{{ subtitle }}</span>
+    <span v-if="duration" class="text-copy text-tertiary shrink-0 font-mono">{{ duration }}</span>
     <ArrowPathIcon
       v-if="part.state?.status === 'running' || part.state?.status === 'pending'"
-      class="text-accent size-3 shrink-0 animate-spin"
+      class="text-accent size-4 shrink-0 animate-spin"
     />
-    <CheckCircleIcon v-else-if="part.state?.status === 'completed'" class="text-success size-3 shrink-0" />
-    <ExclamationCircleIcon v-else-if="part.state?.status === 'error'" class="text-danger size-3 shrink-0" />
+    <CheckCircleIcon v-else-if="part.state?.status === 'completed'" class="text-success size-4 shrink-0" />
+    <ExclamationCircleIcon v-else-if="part.state?.status === 'error'" class="text-danger size-4 shrink-0" />
     <ChevronRightIcon
-      class="text-tertiary size-3 shrink-0 transition-transform"
+      class="text-tertiary size-4 shrink-0 transition-transform"
       :class="expanded ? 'rotate-90' : ''"
     />
   </button>
 
   <div v-if="expanded" class="mb-1 ml-6 mr-2 mt-0.5">
-    <div v-if="part.state?.status === 'error' && part.state?.error" class="text-copy-sm text-danger bg-danger-subtle p-2">
+    <div v-if="part.state?.status === 'error' && part.state?.error" class="text-copy text-danger bg-danger-subtle p-2">
       {{ part.state.error }}
     </div>
     <pre
       v-else-if="output || (part.tool === 'bash' && part.state?.input?.command)"
-      class="bg-terminal text-terminal-text max-h-48 overflow-auto p-2.5 font-mono text-xs leading-relaxed"
+      class="bg-terminal text-terminal-text max-h-48 overflow-auto p-2.5 font-mono text-copy leading-relaxed"
     ><template v-if="part.tool === 'bash' && part.state?.input?.command"><span class="text-terminal-dim">$</span> {{ part.state.input.command }}
 </template>{{ output }}</pre>
-    <div v-else class="text-copy-xs text-tertiary p-2 italic">No output</div>
+    <div v-else class="text-copy text-tertiary p-2 italic">No output</div>
   </div>
 </template>

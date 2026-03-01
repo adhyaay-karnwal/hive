@@ -1,6 +1,8 @@
 <script setup lang="ts">
 type Mode = "build" | "plan";
 
+type AttachedFile = { name: string; mime: string; url: string };
+
 type Props = {
   projectId: string;
   placeholder?: string;
@@ -13,21 +15,35 @@ const { turns, messages, isWorking, pendingQuestions, modelName, connected, init
 
 const mode = ref<Mode>("build");
 const scrollArea = ref<HTMLDivElement>();
-const messageQueue = ref<string[]>([]);
+const messageQueue = ref<{ text: string; files: AttachedFile[] }[]>([]);
+
+// Derive attachment support from the current model's capabilities
+const { data: providers } = await useFetch(`/api/projects/${projectId}/providers`);
+const supportsAttachment = computed(() => {
+  if (!modelName.value || !providers.value) return false;
+  for (const provider of (providers.value as any).providers ?? []) {
+    for (const model of provider.models ?? []) {
+      if (model.id === modelName.value) {
+        return !!(model.capabilities?.attachment || model.capabilities?.input?.image);
+      }
+    }
+  }
+  return false;
+});
 
 // Auto-dequeue when agent finishes
 watch(isWorking, (working, wasWorking) => {
   if (wasWorking && !working && messageQueue.value.length > 0) {
     const next = messageQueue.value.shift()!;
-    store.sendPrompt(projectId, next, { agent: mode.value });
+    store.sendPrompt(projectId, next.text, { agent: mode.value }, next.files);
   }
 });
 
-function handleSend(text: string) {
+function handleSend({ text, files }: { text: string; files: AttachedFile[] }) {
   if (isWorking.value) {
-    messageQueue.value.push(text);
+    messageQueue.value.push({ text, files });
   } else {
-    store.sendPrompt(projectId, text, { agent: mode.value });
+    store.sendPrompt(projectId, text, { agent: mode.value }, files);
     stickToBottom.value = true;
     scrollToBottom();
   }
@@ -142,6 +158,7 @@ watch(initializing, (val, old) => {
               :is-working
               :model-name="modelName"
               :mode
+              :supports-attachment="supportsAttachment"
               @send="handleSend"
               @abort="handleAbort"
               @update:mode="mode = $event"
