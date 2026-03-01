@@ -76,7 +76,8 @@ const emphasisClass = computed(() => {
         <span
           v-for="(token, i) in tokens"
           :key="i"
-          :style="{ color: token.color }"
+          :style="{ '--token-dark': token.dark, '--token-light': token.light }"
+          class="diff-token"
         >{{ token.content }}</span>
       </template>
     </div>
@@ -216,6 +217,16 @@ const emphasisClass = computed(() => {
 .diff-line-selected.diff-line-deletion .diff-line-number {
   color: var(--diff-selection-number-fg);
   background-color: var(--diff-bg-selection-number);
+}
+
+/* ── Syntax token colors ── */
+
+.diff-token {
+  color: var(--token-dark);
+}
+
+:root.light .diff-token {
+  color: var(--token-light);
 }
 
 /* ── Word-level emphasis ── */
