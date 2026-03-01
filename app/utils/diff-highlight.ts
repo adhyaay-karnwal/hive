@@ -102,7 +102,7 @@ export function getLangFromPath(filePath: string): string {
   const name = filePath.split("/").pop()?.toLowerCase() || "";
   if (name === "dockerfile") return "dockerfile";
   const map: Record<string, string> = {
-    ts: "typescript", tsx: "tsx", js: "javascript", jsx: "jsx",
+    ts: "typescript", tsx: "tsx", js: "javascript", cjs: "javascript", mjs: "javascript", jsx: "jsx",
     vue: "vue", svelte: "svelte", html: "html", css: "css", scss: "scss",
     json: "json", yaml: "yaml", yml: "yaml", toml: "toml",
     md: "markdown", mdx: "mdx", py: "python", rs: "rust", go: "go",
