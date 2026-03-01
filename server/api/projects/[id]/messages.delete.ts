@@ -1,6 +1,6 @@
 import { db } from "../../../database";
 import { messages } from "../../../database/schema";
-import { eq, asc } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, "id");
@@ -9,11 +9,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: "id is required" });
   }
 
-  const projectMessages = await db
-    .select()
-    .from(messages)
-    .where(eq(messages.projectId, id))
-    .orderBy(asc(messages.createdAt));
+  await db.delete(messages).where(eq(messages.projectId, id));
 
-  return projectMessages;
+  return { success: true };
 });

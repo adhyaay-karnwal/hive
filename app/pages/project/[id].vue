@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CommandLineIcon } from "@heroicons/vue/16/solid";
+import { CommandLineIcon, TrashIcon } from "@heroicons/vue/16/solid";
 import { ArrowPathIcon } from "@heroicons/vue/20/solid";
 
 const route = useRoute();
@@ -8,7 +8,7 @@ const projectId = computed(() => route.params.id as string);
 const { data: projectData } = await useFetch(`/api/projects/${projectId.value}`);
 
 const store = useHiveStore();
-const { connected, initializing, error, modelPreference } = store.project(projectId.value);
+const { connected, initializing, error, modelPreference, clearChat } = store.project(projectId.value);
 
 // Activate on first visit - store handles dedup
 onMounted(() => {
@@ -53,6 +53,12 @@ const isSelectedFileViewed = computed(() =>
         >
           {{ projectData.pkgManager }}
         </span>
+        <OButton
+          variant="outline"
+          :icon-left="TrashIcon"
+          title="Clear chat history"
+          @click="clearChat"
+        />
         <OButton
           variant="outline"
           @click="toggleModel"

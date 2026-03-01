@@ -76,7 +76,7 @@ function ensureProject(projectId: string): ProjectEntry {
 
 export function useHiveStore() {
   /**
-   * Initialize a project: load project data and mark as connected.
+   * Initialize a project: load project data + chat history, then mark as connected.
    * Safe to call multiple times — skips if already initialized.
    */
   async function activate(projectId: string) {
@@ -88,8 +88,31 @@ export function useHiveStore() {
     entry.initializing.value = true;
 
     try {
-      const data = await $fetch<{ name: string }>(`/api/projects/${projectId}`);
+      // Fetch project metadata and message history in parallel
+      const [data, history] = await Promise.all([
+        $fetch<{ name: string }>(`/api/projects/${projectId}`),
+        $fetch<Array<{ id: string; role: string; content: unknown; createdAt: string }>>(
+          `/api/projects/${projectId}/messages`,
+        ),
+      ]);
+
       entry.projectName.value = data?.name ?? "";
+
+      // Seed the Chat instance with persisted messages (only if still empty,
+      // to avoid overwriting messages that arrived during a concurrent stream)
+      const state = (entry.chat as any).state;
+      const messagesRef = state.messagesRef as Ref<UIMessage[]>;
+      if (messagesRef.value.length === 0 && history && history.length > 0) {
+        messagesRef.value = history.map((row) => ({
+          id: row.id,
+          role: row.role as UIMessage["role"],
+          // The DB stores `parts ?? content` — restore whichever shape was saved
+          parts: Array.isArray(row.content) ? (row.content as UIMessage["parts"]) : [],
+          content: typeof row.content === "string" ? row.content : "",
+          createdAt: new Date(row.createdAt),
+        }));
+      }
+
       entry.connected.value = true;
     } catch (e: any) {
       console.error(`[hive:activate:${projectId}]`, e.message);
@@ -138,6 +161,10 @@ export function useHiveStore() {
       // Chat actions
       sendMessage: (text: string, files?: FileUIPart[]) => chat.sendMessage({ text, files }),
       stop: () => chat.stop(),
+      clearChat: async () => {
+        await $fetch(`/api/projects/${projectId}/messages`, { method: "DELETE" });
+        chat.messages = [];
+      },
 
       // Custom state
       modelPreference: entry.modelPreference,
