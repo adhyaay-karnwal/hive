@@ -13,7 +13,7 @@ const slots = useSlots();
 </script>
 
 <template>
-  <header class="flex h-12.5 shrink-0 items-center p-2" :class="borderless ? '' : 'border-edge border-b'">
+  <header class="flex h-10 shrink-0 items-center px-2" :class="borderless ? '' : 'border-edge border-b'">
     <div class="flex flex-1 items-center gap-2 px-1.5">
       <div class="flex items-center gap-2">
         <component v-if="icon" :is="icon" class="text-primary size-4" />

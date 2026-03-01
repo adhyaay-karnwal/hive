@@ -82,6 +82,9 @@ onMounted(() => {
   for (const child of el.children) {
     resizeObs.observe(child);
   }
+
+  // Auto-focus the chat input on load
+  chatInput.value?.focus();
 });
 
 onUnmounted(() => {

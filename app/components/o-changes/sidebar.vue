@@ -123,7 +123,7 @@ const statusColors: Record<string, string> = {
 
 <template>
   <div class="flex h-full flex-col">
-    <OHeader title="Changes" borderless>
+    <OHeader title="Changes">
       <template #trailing>
         <span
           v-if="files.length"
@@ -167,9 +167,9 @@ const statusColors: Record<string, string> = {
             </p>
             <OButton
               variant="transparent"
-             
               :icon-left="CheckIcon"
               title="Stage all"
+              class="-mr-2"
               @click="emit('stage-all')"
             >
               All

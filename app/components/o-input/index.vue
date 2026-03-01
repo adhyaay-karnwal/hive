@@ -23,7 +23,7 @@ const {
 
 const model = defineModel<string | number>();
 
-const inputElement = ref<HTMLInputElement | null>(null);
+const inputElement = useTemplateRef<HTMLInputElement>("input-element");
 
 defineExpose({
   focus: () => {
@@ -53,7 +53,7 @@ const hasTrailing = computed(() => !!trailing || !!slots.trailing);
       <template v-else><slot name="leading" /></template>
     </div>
     <input
-      ref="inputElement"
+      ref="input-element"
       :id="name"
       :name="name"
       :type="type"

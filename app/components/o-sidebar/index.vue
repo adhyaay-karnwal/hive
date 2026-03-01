@@ -95,7 +95,7 @@ async function toggleDevServer(wt: any) {
 
 <template>
   <div class="flex h-full flex-col">
-    <OHeader borderless>
+    <OHeader>
       <template #leading>
         <div class="flex items-center gap-0.5">
           <OButton

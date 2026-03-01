@@ -41,7 +41,7 @@ const { isDark, toggleTheme } = useTheme();
     <div class="flex min-h-0 flex-1 gap-1 px-1 pb-1">
       <aside
         v-show="!isDiffOpen"
-        class="flex w-60 shrink-0 flex-col"
+        class="bg-base-1 flex w-60 shrink-0 flex-col overflow-hidden ring-1 ring-edge"
       >
         <OSidebar />
       </aside>
@@ -54,7 +54,7 @@ const { isDark, toggleTheme } = useTheme();
 
       <aside
         v-if="hasProjectOpen"
-        class="flex w-52 shrink-0 flex-col"
+        class="bg-base-1 flex w-52 shrink-0 flex-col overflow-hidden ring-1 ring-edge"
       >
         <OChangesPanel />
       </aside>
