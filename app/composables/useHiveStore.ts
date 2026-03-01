@@ -448,8 +448,20 @@ export function useHiveStore() {
   /**
    * Send a prompt. If agent is busy, caller should handle queueing.
    */
-  function sendPrompt(projectId: string, text: string, opts?: { agent?: string; model?: string }) {
+  function sendPrompt(
+    projectId: string,
+    text: string,
+    opts?: { agent?: string; model?: string },
+    files?: { name: string; mime: string; url: string }[],
+  ) {
     const s = ensureState(projectId);
+
+    const fileParts = (files ?? []).map((f) => ({
+      type: "file" as const,
+      mime: f.mime,
+      filename: f.name,
+      url: f.url,
+    }));
 
     // Optimistic user message
     const msgs = getMessages(projectId);
@@ -462,14 +474,17 @@ export function useHiveStore() {
           sessionID: s.sessionId || "",
           time: { created: Date.now() },
         },
-        parts: [{ type: "text", text }],
+        parts: [
+          ...fileParts,
+          { type: "text", text },
+        ],
       },
     ];
     s.isWorking = true;
 
     wsSend(projectId, {
       type: "prompt",
-      data: { message: text, ...opts },
+      data: { message: text, files: fileParts, ...opts },
     });
   }
 
