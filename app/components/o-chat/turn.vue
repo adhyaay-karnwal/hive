@@ -180,16 +180,15 @@ async function copyResponse() {
     <!-- Sequential blocks: text and tool groups interleaved -->
     <template v-for="(block, blockIdx) in blocks" :key="block.id">
       <!-- Text block -->
-      <div v-if="block.kind === 'text'" class="group/resp relative px-5 py-1">
+      <div v-if="block.kind === 'text'" class="group/resp flex items-start gap-1 px-5 py-1">
+        <OChatMarkdown class="min-w-0 flex-1" :content="block.text" />
         <OButton
           variant="transparent"
-         
           :icon-left="copied ? CheckIcon : ClipboardIcon"
-          class="absolute top-0 right-5 opacity-0 transition-opacity group-hover/resp:opacity-100"
+          class="mt-0.5 shrink-0 opacity-0 transition-opacity group-hover/resp:opacity-100"
           :class="copied ? 'text-accent' : ''"
           @click="copyResponse"
         />
-        <OChatMarkdown :content="block.text" />
       </div>
 
       <!-- Tool call group (collapsible) -->
