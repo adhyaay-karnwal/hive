@@ -1,13 +1,19 @@
-import { tool, jsonSchema } from "ai";
+import { tool, jsonSchema, generateId } from "ai";
+import type { UIMessageStreamWriter } from "ai";
 import { createWorktree } from "../worktree";
 
 /**
  * Create a tool for spawning sub-agents.
  * Sub-agents can optionally work in isolated git worktrees.
+ *
+ * When a `writer` is provided (from createUIMessageStream), the sub-agent's
+ * output is streamed to the client in real time as `data-subAgent` parts,
+ * with the same ID being reconciled on each chunk so the UI updates in place.
  */
 export function createSpawnAgentTool(
   projectPath: string,
   modelPreference: "opus" | "sonnet",
+  writer?: UIMessageStreamWriter,
 ) {
   return tool({
     description:
@@ -42,7 +48,7 @@ export function createSpawnAgentTool(
     }),
     execute: async ({ task, isolated, branchName }) => {
       // Lazy import to avoid circular dependency
-      const { runAgent, getModel } = await import("../agent");
+      const { runAgent } = await import("../agent");
 
       let agentCwd = projectPath;
 
@@ -67,6 +73,10 @@ export function createSpawnAgentTool(
         task,
       ].join("\n");
 
+      // Stable ID for this sub-agent invocation — the client reconciles writes
+      // with the same ID so the panel updates in place rather than appending.
+      const partId = generateId();
+
       try {
         const result = await runAgent({
           messages: [{ role: "user", content: task }],
@@ -75,14 +85,46 @@ export function createSpawnAgentTool(
           systemPrompt,
         });
 
-        // Collect the full text response
         let fullText = "";
-        for await (const part of result.textStream) {
-          fullText += part;
+
+        // Stream each text chunk to the client as a data-subAgent part update.
+        for await (const chunk of result.textStream) {
+          fullText += chunk;
+
+          writer?.write({
+            type: "data-subAgent",
+            id: partId,
+            data: {
+              task,
+              status: "streaming" as const,
+              text: fullText,
+            },
+          });
         }
+
+        // Final update — mark as done so the client can collapse / finalise the panel.
+        writer?.write({
+          type: "data-subAgent",
+          id: partId,
+          data: {
+            task,
+            status: "done" as const,
+            text: fullText,
+          },
+        });
 
         return fullText || "(sub-agent produced no text output)";
       } catch (e: any) {
+        writer?.write({
+          type: "data-subAgent",
+          id: partId,
+          data: {
+            task,
+            status: "error" as const,
+            text: `Sub-agent error: ${e.message}`,
+          },
+        });
+
         return `Sub-agent error: ${e.message}`;
       }
     },

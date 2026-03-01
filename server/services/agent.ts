@@ -2,7 +2,7 @@ import {
   createAnthropic,
   type AnthropicLanguageModelOptions,
 } from "@ai-sdk/anthropic";
-import { streamText, stepCountIs, type CoreMessage } from "ai";
+import { streamText, stepCountIs, type CoreMessage, type UIMessageStreamWriter } from "ai";
 import { createBashTool } from "./tools/bash";
 import { createTextEditorTool } from "./tools/text-editor";
 import { createSpawnAgentTool } from "./tools/spawn-agent";
@@ -54,7 +54,7 @@ export function runAgent(options: RunAgentOptions) {
     str_replace_based_edit_tool: createTextEditorTool(anthropic, projectPath),
     webSearch: anthropic.tools.webSearch_20250305({ maxUses: 10 }),
     webFetch: anthropic.tools.webFetch_20250910({ maxUses: 10 }),
-    codeExecution: anthropic.tools.codeExecution_20250825(),
+    codeExecution: anthropic.tools.codeExecution_20260120(),
     spawnAgent: createSpawnAgentTool(projectPath, modelPreference),
   };
 

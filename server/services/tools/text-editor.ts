@@ -6,19 +6,8 @@ import {
   readdirSync,
   statSync,
 } from "fs";
-import { join, resolve, dirname } from "path";
+import { resolve, dirname } from "path";
 import type { AnthropicProvider } from "@ai-sdk/anthropic";
-
-interface TextEditorParams {
-  command: "view" | "create" | "str_replace" | "insert";
-  path: string;
-  old_str?: string;
-  new_str?: string;
-  file_text?: string;
-  insert_line?: number;
-  insert_text?: string;
-  view_range?: [number, number];
-}
 
 function resolvePath(basePath: string, filePath: string): string {
   // The model tends to prefix paths with /repo (its trained container convention).
@@ -99,15 +88,15 @@ function strReplace(
   const newContent = content.replace(oldStr, newStr);
   writeFileSync(filePath, newContent, "utf-8");
 
-  // Show the edited region with line numbers
-  const newLines = newContent.split("\n");
+  // Find the replacement location using the original content (before replace),
+  // so we don't fall into the indexOf("") === 0 trap when newStr is empty.
+  const insertionIdx = content.indexOf(oldStr);
+  const startLine = content.slice(0, insertionIdx).split("\n").length;
   const replacedLines = newStr.split("\n");
-  const startIdx = newContent.indexOf(newStr);
-  const startLine =
-    newContent.slice(0, startIdx).split("\n").length;
   const endLine = startLine + replacedLines.length - 1;
 
   // Show a few lines of context around the edit
+  const newLines = newContent.split("\n");
   const contextStart = Math.max(0, startLine - 3);
   const contextEnd = Math.min(newLines.length, endLine + 3);
 
@@ -160,51 +149,47 @@ function insertText(
 
 /**
  * Create a text editor tool scoped to a base directory.
- * Returns the Anthropic provider-defined text editor tool with execute implementation.
+ * Uses the Anthropic provider-defined text editor tool with a custom execute.
  */
 export function createTextEditorTool(
   anthropic: AnthropicProvider,
   basePath: string,
 ) {
   return anthropic.tools.textEditor_20250728({
-    execute: async (params: TextEditorParams) => {
-      const filePath = resolvePath(basePath, params.path);
+    async execute({ command, path, old_str, new_str, file_text, insert_line, insert_text, view_range }) {
+      const filePath = resolvePath(basePath, path);
 
       try {
-        switch (params.command) {
+        switch (command) {
           case "view":
-            return viewFile(filePath, params.view_range);
+            return viewFile(filePath, view_range);
 
           case "create":
-            if (!params.file_text && params.file_text !== "") {
+            if (file_text === undefined) {
               return "Error: file_text is required for create command.";
             }
-            return createFile(filePath, params.file_text);
+            return createFile(filePath, file_text);
 
           case "str_replace":
-            if (params.old_str === undefined) {
+            if (old_str === undefined) {
               return "Error: old_str is required for str_replace command.";
             }
-            if (params.new_str === undefined) {
+            if (new_str === undefined) {
               return "Error: new_str is required for str_replace command.";
             }
-            return strReplace(filePath, params.old_str, params.new_str);
+            return strReplace(filePath, old_str, new_str);
 
           case "insert":
-            if (params.insert_line === undefined) {
+            if (insert_line === undefined) {
               return "Error: insert_line is required for insert command.";
             }
-            if (params.insert_text === undefined) {
+            if (insert_text === undefined) {
               return "Error: insert_text is required for insert command.";
             }
-            return insertText(
-              filePath,
-              params.insert_line,
-              params.insert_text,
-            );
+            return insertText(filePath, insert_line, insert_text);
 
           default:
-            return `Error: Unknown command "${params.command}".`;
+            return `Error: Unknown command "${command}".`;
         }
       } catch (e: any) {
         return `Error: ${e.message}`;
