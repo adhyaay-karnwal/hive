@@ -9,6 +9,8 @@ const {
   commitMessage,
   committing,
   commitError,
+  branch,
+  repoName,
   selectFile,
   toggleViewed,
   requestChanges,
@@ -68,6 +70,8 @@ onKeyStroke("Escape", () => {
     :default-commit-message="commitMessage"
     :committing="committing"
     :commit-error="commitError"
+    :branch="branch"
+    :repo-name="repoName"
     @select-file="selectFile"
     @toggle-viewed="toggleViewed"
     @stage-all="stageAll"

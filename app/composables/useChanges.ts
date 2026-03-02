@@ -28,6 +28,8 @@ const selectedFile = ref<string | null>(null);
 const selectedFileContent = ref<string | null>(null);
 const loadingFileContent = ref(false);
 const commentInputActive = ref(false);
+const branch = ref("");
+const repoName = ref("");
 let activeProjectId: string | null = null;
 
 export function useChanges() {
@@ -71,6 +73,8 @@ export function useChanges() {
       const data = await $fetch(`/api/projects/${id}/changes`);
       files.value = (data as any).files || [];
       rawDiff.value = (data as any).diff || "";
+      branch.value = (data as any).branch || "";
+      repoName.value = (data as any).repoName || "";
     } catch (e) {
       console.error("[changes] Failed to fetch:", e);
     } finally {
@@ -362,6 +366,8 @@ export function useChanges() {
     commitMessage,
     committing,
     commitError,
+    branch,
+    repoName,
 
     fetchChanges,
     fetchComments,

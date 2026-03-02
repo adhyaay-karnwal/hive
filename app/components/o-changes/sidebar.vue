@@ -30,6 +30,8 @@ type Props = {
   defaultCommitMessage: string;
   committing: boolean;
   commitError: string | null;
+  branch: string;
+  repoName: string;
 };
 
 type Emits = {
@@ -51,6 +53,8 @@ const {
   defaultCommitMessage = "",
   committing = false,
   commitError = null,
+  branch = "",
+  repoName = "",
 } = defineProps<Props>();
 
 const emit = defineEmits<Emits>();
@@ -330,6 +334,10 @@ const statusColors: Record<string, string> = {
           </OButton>
         </div>
       </div>
+    </div>
+    <!-- Repo + branch status bar -->
+    <div v-if="repoName || branch" class="border-edge text-copy text-tertiary break-all border-t px-3 py-1.5 font-mono">
+      <span v-if="repoName" class="text-primary">{{ repoName }}</span><span v-if="repoName && branch" class="opacity-40"> / </span><span v-if="branch" class="font-medium">{{ branch }}</span>
     </div>
   </div>
 </template>

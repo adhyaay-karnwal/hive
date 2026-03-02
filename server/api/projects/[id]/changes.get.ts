@@ -58,9 +58,35 @@ export default defineEventHandler(async (event) => {
       diff = await git.diff(["--cached"]);
     }
 
-    return { diff: diff || "", files };
+    // Get branch name
+    let branch = "";
+    try {
+      const branchResult = await git.revparse(["--abbrev-ref", "HEAD"]);
+      branch = branchResult.trim();
+    } catch {
+      // May fail if no commits exist yet
+    }
+
+    // Get repo name from remote origin URL, fall back to directory basename
+    let repoName = project.path.split("/").filter(Boolean).pop() || "";
+    try {
+      const remotes = await git.getRemotes(true);
+      const origin = remotes.find((r) => r.name === "origin");
+      if (origin?.refs?.fetch) {
+        const url = origin.refs.fetch;
+        // Extract repo name from URL like git@github.com:user/repo.git or https://github.com/user/repo.git
+        const match = url.match(/\/([^/]+?)(?:\.git)?$/) || url.match(/:([^/]+\/[^/]+?)(?:\.git)?$/);
+        if (match) {
+          repoName = match[1];
+        }
+      }
+    } catch {
+      // Ignore — fall back to directory name
+    }
+
+    return { diff: diff || "", files, branch, repoName };
   } catch (e: any) {
     console.error(`[changes] Error for project ${id}:`, e.message);
-    return { diff: "", files: [] };
+    return { diff: "", files: [], branch: "", repoName: "" };
   }
 });
