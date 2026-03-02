@@ -30,6 +30,8 @@ const loadingFileContent = ref(false);
 const commentInputActive = ref(false);
 const branch = ref("");
 const repoName = ref("");
+const unpushedCount = ref(0);
+const pushing = ref(false);
 let activeProjectId: string | null = null;
 
 export function useChanges() {
@@ -75,6 +77,7 @@ export function useChanges() {
       rawDiff.value = (data as any).diff || "";
       branch.value = (data as any).branch || "";
       repoName.value = (data as any).repoName || "";
+      unpushedCount.value = (data as any).unpushedCount || 0;
     } catch (e) {
       console.error("[changes] Failed to fetch:", e);
     } finally {

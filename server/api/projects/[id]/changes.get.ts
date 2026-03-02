@@ -84,9 +84,31 @@ export default defineEventHandler(async (event) => {
       // Ignore — fall back to directory name
     }
 
-    return { diff: diff || "", files, branch, repoName };
+    // Count unpushed commits
+    let unpushedCount = 0;
+    if (hasCommits && branch) {
+      try {
+        const remotes = await git.getRemotes(true);
+        const hasOrigin = remotes.some((r) => r.name === "origin");
+        if (hasOrigin) {
+          // Check if upstream tracking branch exists
+          try {
+            const log = await git.log([`origin/${branch}..HEAD`, "--oneline"]);
+            unpushedCount = log.total;
+          } catch {
+            // No upstream tracking branch — all local commits are unpushed
+            const log = await git.log(["--oneline"]);
+            unpushedCount = log.total;
+          }
+        }
+      } catch {
+        // Ignore — no remote or other issue
+      }
+    }
+
+    return { diff: diff || "", files, branch, repoName, unpushedCount };
   } catch (e: any) {
     console.error(`[changes] Error for project ${id}:`, e.message);
-    return { diff: "", files: [], branch: "", repoName: "" };
+    return { diff: "", files: [], branch: "", repoName: "", unpushedCount: 0 };
   }
 });
