@@ -23,11 +23,6 @@ export const worktrees = sqliteTable("worktrees", {
   status: text("status", { enum: ["active", "archived"] })
     .notNull()
     .default("active"),
-  opencodePort: integer("opencode_port"),
-  opencodePid: integer("opencode_pid"),
-  devServerActive: integer("dev_server_active", { mode: "boolean" })
-    .notNull()
-    .default(false),
   linearIssueId: text("linear_issue_id"),
   linearIssueIdentifier: text("linear_issue_identifier"),
   createdAt: integer("created_at", { mode: "timestamp" })
@@ -37,9 +32,17 @@ export const worktrees = sqliteTable("worktrees", {
 
 export const sessions = sqliteTable("sessions", {
   id: text("id").primaryKey(),
+  projectId: text("project_id")
+    .notNull()
+    .references(() => projects.id),
   worktreeId: text("worktree_id").references(() => worktrees.id),
-  opencodeSessionId: text("opencode_session_id"),
+  parentSessionId: text("parent_session_id"),
   role: text("role", { enum: ["main", "worker", "reviewer"] }).notNull(),
+  modelPreference: text("model_preference", {
+    enum: ["opus", "sonnet"],
+  })
+    .notNull()
+    .default("sonnet"),
   status: text("status", {
     enum: ["idle", "working", "question", "done", "error"],
   })
@@ -136,3 +139,19 @@ export const devProfile = sqliteTable("dev_profile", {
     .notNull()
     .$defaultFn(() => new Date()),
 });
+
+export const messages = sqliteTable("messages", {
+  id: text("id").primaryKey(),
+  sessionId: text("session_id").references(() => sessions.id),
+  projectId: text("project_id")
+    .notNull()
+    .references(() => projects.id),
+  role: text("role", {
+    enum: ["user", "assistant", "system", "tool"],
+  }).notNull(),
+  content: text("content", { mode: "json" }).notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+});
+

@@ -2,22 +2,22 @@ import { db } from "../../database";
 import { devProfile } from "../../database/schema";
 import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
+import { z } from "zod/v4";
+
+const bodySchema = z.object({
+  entries: z.array(
+    z.object({
+      id: z.string().optional(),
+      key: z.string().min(1),
+      value: z.string(),
+      category: z.enum(["style", "preference", "convention", "rule"]),
+    }),
+  ),
+});
 
 export default defineEventHandler(async (event) => {
-  const body = await readBody<{
-    entries: {
-      id?: string;
-      key: string;
-      value: string;
-      category: "style" | "preference" | "convention" | "rule";
-    }[];
-  }>(event);
+  const body = await readValidatedBody(event, bodySchema.parse);
 
-  if (!body.entries) {
-    throw createError({ statusCode: 400, message: "entries are required" });
-  }
-
-  // Upsert each entry
   for (const entry of body.entries) {
     if (entry.id) {
       await db

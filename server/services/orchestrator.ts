@@ -3,18 +3,13 @@ import {
   sessions,
   worktrees,
   reviews,
-  signals,
-  projects,
 } from "../database/schema";
 import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { buildWorkerPrompt, buildReviewerPrompt } from "./prompt-builder";
-import { allocatePort } from "./port-allocator";
 import { createWorktree } from "./worktree";
-import {
-  startOpenCodeServer,
-  installDeps,
-} from "./process";
+import { installDeps } from "./worktree";
+import { runAgent } from "./agent";
 
 /**
  * Full lifecycle: create a worktree, start an agent, delegate a task.
@@ -25,20 +20,18 @@ export async function delegateTask(opts: {
   taskDescription: string;
   linearIssueId?: string;
   linearIssueIdentifier?: string;
-  linearIssueDescription?: string;
 }): Promise<{
   worktreeId: string;
   sessionId: string;
 }> {
   const project = await db.query.projects.findFirst({
-    where: eq(projects.id, opts.projectId),
+    where: { id: opts.projectId },
   });
 
   if (!project) throw new Error("Project not found");
 
   // 1. Create worktree
   const worktreePath = await createWorktree(project.path, opts.branchName);
-  const port = await allocatePort();
   const worktreeId = nanoid();
 
   await db.insert(worktrees).values({
@@ -47,7 +40,6 @@ export async function delegateTask(opts: {
     branchName: opts.branchName,
     path: worktreePath,
     status: "active",
-    opencodePort: port,
     linearIssueId: opts.linearIssueId,
     linearIssueIdentifier: opts.linearIssueIdentifier,
   });
@@ -61,63 +53,44 @@ export async function delegateTask(opts: {
     });
   }
 
-  // 3. Create session ID first so we can pass it to the MCP
+  // 3. Create session record
   const sessionId = nanoid();
-
-  // 4. Start OpenCode server (registers signal MCP with sessionId)
-  const pid = startOpenCodeServer(worktreePath, port, sessionId);
-  await db
-    .update(worktrees)
-    .set({ opencodePid: pid })
-    .where(eq(worktrees.id, worktreeId));
-
-  // 5. Wait for server to be ready (registerSignalMcp already polls health)
-  await new Promise((r) => setTimeout(r, 5000));
-  let opencodeSessionId: string | undefined;
-
-  try {
-    const res = await fetch(`http://localhost:${port}/session`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({}),
-    });
-    const data = await res.json();
-    opencodeSessionId = data.id;
-  } catch (e) {
-    console.warn("[orchestrator] Failed to create OpenCode session:", e);
-  }
-
   await db.insert(sessions).values({
     id: sessionId,
+    projectId: opts.projectId,
     worktreeId,
-    opencodeSessionId,
     role: "worker",
     status: "working",
   });
 
-  // 6. Build and send the worker prompt
+  // 4. Build and run the worker agent
   const prompt = await buildWorkerPrompt({
     taskDescription: opts.taskDescription,
-    linearIssueDescription: opts.linearIssueDescription,
     worktreeId,
   });
 
-  if (opencodeSessionId) {
-    try {
-      await fetch(
-        `http://localhost:${port}/session/${opencodeSessionId}/prompt_async`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            parts: [{ type: "text", text: prompt }],
-          }),
-        },
-      );
-    } catch (e) {
-      console.error("[orchestrator] Failed to send prompt:", e);
-    }
-  }
+  // Run the agent in the background (non-blocking)
+  runAgent({
+    messages: [{ role: "user", content: prompt }],
+    projectPath: worktreePath,
+    modelPreference: "sonnet",
+    systemPrompt: prompt,
+  })
+    .then(async (result) => {
+      // Wait for the stream to complete
+      await result.text;
+      await db
+        .update(sessions)
+        .set({ status: "done" })
+        .where(eq(sessions.id, sessionId));
+    })
+    .catch(async (e) => {
+      console.error("[orchestrator] Agent failed:", e);
+      await db
+        .update(sessions)
+        .set({ status: "error" })
+        .where(eq(sessions.id, sessionId));
+    });
 
   return { worktreeId, sessionId };
 }
@@ -128,11 +101,11 @@ export async function delegateTask(opts: {
  */
 export async function triggerReview(worktreeId: string): Promise<string> {
   const worktree = await db.query.worktrees.findFirst({
-    where: eq(worktrees.id, worktreeId),
+    where: { id: worktreeId },
   });
 
-  if (!worktree || !worktree.opencodePort) {
-    throw new Error("Worktree or OpenCode server not available");
+  if (!worktree) {
+    throw new Error("Worktree not found");
   }
 
   // Get the diff from the worktree
@@ -162,56 +135,45 @@ export async function triggerReview(worktreeId: string): Promise<string> {
     iteration: 1,
   });
 
-  // Create a reviewer session on the same OpenCode server
-  const port = worktree.opencodePort;
-  let reviewerOcSessionId: string | undefined;
-
-  try {
-    const res = await fetch(`http://localhost:${port}/session`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({}),
-    });
-    const data = await res.json();
-    reviewerOcSessionId = data.id;
-  } catch (e) {
-    console.warn("[orchestrator] Failed to create reviewer session:", e);
-  }
-
+  // Create a reviewer session
   const reviewerSessionId = nanoid();
   await db.insert(sessions).values({
     id: reviewerSessionId,
+    projectId: worktree.projectId,
     worktreeId,
-    opencodeSessionId: reviewerOcSessionId,
     role: "reviewer",
     status: "working",
   });
 
-  // Update review with session IDs
+  // Update review with session ID
   await db
     .update(reviews)
     .set({ reviewerSessionId })
     .where(eq(reviews.id, reviewId));
 
-  // Build and send the review prompt
+  // Build and run the reviewer agent
   const reviewPrompt = await buildReviewerPrompt(diff);
 
-  if (reviewerOcSessionId) {
-    try {
-      await fetch(
-        `http://localhost:${port}/session/${reviewerOcSessionId}/prompt_async`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            parts: [{ type: "text", text: reviewPrompt }],
-          }),
-        },
-      );
-    } catch (e) {
-      console.error("[orchestrator] Failed to send review prompt:", e);
-    }
-  }
+  runAgent({
+    messages: [{ role: "user", content: reviewPrompt }],
+    projectPath: worktree.path,
+    modelPreference: "sonnet",
+    systemPrompt: reviewPrompt,
+  })
+    .then(async (result) => {
+      await result.text;
+      await db
+        .update(sessions)
+        .set({ status: "done" })
+        .where(eq(sessions.id, reviewerSessionId));
+    })
+    .catch(async (e) => {
+      console.error("[orchestrator] Reviewer agent failed:", e);
+      await db
+        .update(sessions)
+        .set({ status: "error" })
+        .where(eq(sessions.id, reviewerSessionId));
+    });
 
   return reviewId;
 }

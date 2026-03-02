@@ -1,0 +1,1 @@
+ALTER TABLE `worktrees` DROP COLUMN `dev_server_active`;

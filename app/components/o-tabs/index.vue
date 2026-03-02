@@ -60,7 +60,7 @@ function closeTab(projectId: string, e: Event) {
   e.preventDefault();
   e.stopPropagation();
 
-  // Disconnect WebSocket and clean up state for this project
+  // Clean up chat state for this project
   store.deactivate(projectId);
 
   openTabs.value = openTabs.value.filter((id) => id !== projectId);
@@ -83,7 +83,7 @@ function closeTab(projectId: string, e: Event) {
         class="grid size-6 place-items-center outline-none"
         :class="isHome ? 'text-primary' : 'text-tertiary'"
       >
-        <RectangleStackIcon class="size-3.5" />
+        <RectangleStackIcon class="size-4" />
       </NuxtLink>
     </OHover>
 
@@ -100,33 +100,30 @@ function closeTab(projectId: string, e: Event) {
         <div class="flex items-center">
           <NuxtLink
             :to="`/project/${proj!.id}`"
-            class="text-copy-sm max-w-32 truncate whitespace-nowrap py-1 pl-2.5 pr-1 outline-none"
+            class="text-copy max-w-32 truncate whitespace-nowrap py-1 pl-2.5 pr-1 outline-none"
             :class="
               currentProjectId === proj!.id ? 'text-primary' : 'text-tertiary'
             "
           >
             {{ proj!.name }}
           </NuxtLink>
-          <button
-            type="button"
-            class="text-tertiary hover:text-primary grid size-5 place-items-center rounded opacity-0 transition-opacity outline-none group-hover/h:opacity-100"
+          <OButton
+            variant="transparent"
+           
+            :icon-left="XMarkIcon"
+            class="opacity-0 transition-opacity group-hover/h:opacity-100"
             :class="currentProjectId === proj!.id ? 'opacity-60' : ''"
             @click="closeTab(proj!.id, $event)"
-          >
-            <XMarkIcon class="size-3" />
-          </button>
+          />
         </div>
       </OHover>
     </OTooltip>
 
-    <OHover class="cursor-default">
-      <button
-        type="button"
-        class="text-tertiary hover:text-primary grid size-6 place-items-center outline-none"
-        @click="openProject"
-      >
-        <PlusIcon class="size-3.5" />
-      </button>
-    </OHover>
+    <OButton
+      variant="transparent"
+     
+      :icon-left="PlusIcon"
+      @click="openProject"
+    />
   </div>
 </template>

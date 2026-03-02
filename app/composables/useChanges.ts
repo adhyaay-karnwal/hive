@@ -28,6 +28,10 @@ const selectedFile = ref<string | null>(null);
 const selectedFileContent = ref<string | null>(null);
 const loadingFileContent = ref(false);
 const commentInputActive = ref(false);
+const branch = ref("");
+const repoName = ref("");
+const unpushedCount = ref(0);
+const pushing = ref(false);
 let activeProjectId: string | null = null;
 
 export function useChanges() {
@@ -71,6 +75,9 @@ export function useChanges() {
       const data = await $fetch(`/api/projects/${id}/changes`);
       files.value = (data as any).files || [];
       rawDiff.value = (data as any).diff || "";
+      branch.value = (data as any).branch || "";
+      repoName.value = (data as any).repoName || "";
+      unpushedCount.value = (data as any).unpushedCount || 0;
     } catch (e) {
       console.error("[changes] Failed to fetch:", e);
     } finally {
@@ -241,6 +248,7 @@ export function useChanges() {
     if (!id || !unresolvedComments.value.length) return;
 
     const store = useHiveStore();
+    const { sendMessage } = store.project(id);
 
     const lines = ["Please address the following review feedback:\n"];
 
@@ -267,7 +275,7 @@ export function useChanges() {
       "---\nAfter making changes, let me know when you're ready for another review.",
     );
 
-    store.sendPrompt(id, lines.join("\n"));
+    sendMessage(lines.join("\n"));
 
     const ids = unresolvedComments.value.map((c) => c.id);
     try {
@@ -330,6 +338,23 @@ export function useChanges() {
     }
   }
 
+  async function push() {
+    const id = projectId.value;
+    if (!id || pushing.value) return false;
+
+    pushing.value = true;
+    try {
+      await $fetch(`/api/projects/${id}/push`, { method: "POST" });
+      await fetchChanges();
+      return true;
+    } catch (e: any) {
+      console.error("[changes] Push failed:", e);
+      return false;
+    } finally {
+      pushing.value = false;
+    }
+  }
+
   function init() {
     const id = projectId.value;
     if (id && id !== activeProjectId) {
@@ -361,6 +386,10 @@ export function useChanges() {
     commitMessage,
     committing,
     commitError,
+    branch,
+    repoName,
+    unpushedCount,
+    pushing,
 
     fetchChanges,
     fetchComments,
@@ -373,6 +402,7 @@ export function useChanges() {
     closeOverlay,
     requestChanges,
     commit,
+    push,
     init,
   };
 }

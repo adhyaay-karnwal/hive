@@ -1,22 +1,6 @@
 @import "tailwindcss";
 @import "./diff.css";
 
-/*
- * ═══════════════════════════════════════════════════════════════
- * OKLCH Seed-Based Color System
- *
- * Ported from Zeitwerk's design system.
- *
- * Two axes:
- *   base-*    = spatial layers (fixed direction, always darker = further back)
- *   surface-* = interactive shifts (relative to inherited --base, uses --dir)
- *
- * --seed is the raw OKLCH root color.
- * --base is the inherited context variable — set by .base-* classes,
- * and all derived tokens (surfaces, text, edges) adapt automatically.
- * ═══════════════════════════════════════════════════════════════
- */
-
 :root {
   /* ── Seed coordinates ── */
   --seed-h: 55;
@@ -63,28 +47,25 @@
   --success: oklch(0.7 0.15 155);
 }
 
-/* Light mode values — preserved for future theme toggle support
-@media (prefers-color-scheme: light) {
-  :root {
-    --dir: -1;
-    --edge-alpha: 0.12;
-    --edge-alpha-subtle: 0.06;
-    --edge-alpha-strong: 0.2;
-    --base-0-offset: 0.08;
-    --base-1-offset: 0.03;
-    --base-3-offset: -0.015;
-    --surface-step-on-0: 0.035;
-    --surface-step-on-1: 0.035;
-    --surface-step-on-2: 0.035;
-    --surface-step-on-3: 0.035;
-    --seed: oklch(0.985 var(--seed-c) var(--seed-h));
-    --accent: oklch(0.55 var(--accent-c) var(--accent-h));
-    --danger: oklch(0.55 0.2 25);
-    --warn: oklch(0.75 0.15 85);
-    --success: oklch(0.55 0.17 155);
-  }
+:root.light {
+  color-scheme: light;
+  --dir: -1;
+  --edge-alpha: 0.12;
+  --edge-alpha-subtle: 0.06;
+  --edge-alpha-strong: 0.2;
+  --base-0-offset: 0.08;
+  --base-1-offset: 0.03;
+  --base-3-offset: -0.015;
+  --surface-step-on-0: 0.035;
+  --surface-step-on-1: 0.035;
+  --surface-step-on-2: 0.035;
+  --surface-step-on-3: 0.035;
+  --seed: oklch(0.985 var(--seed-c) var(--seed-h));
+  --accent: oklch(0.55 var(--accent-c) var(--accent-h));
+  --danger: oklch(0.55 0.2 25);
+  --warn: oklch(0.75 0.15 85);
+  --success: oklch(0.55 0.17 155);
 }
-*/
 
 @theme {
   /* ── Fonts ── */

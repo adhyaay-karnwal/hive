@@ -1,6 +1,5 @@
 <script setup lang="ts">
-type Mode = "build" | "plan";
-
+import type { FileUIPart } from "ai";
 type Props = {
   projectId: string;
   placeholder?: string;
@@ -9,25 +8,33 @@ type Props = {
 const { projectId, placeholder } = defineProps<Props>();
 
 const store = useHiveStore();
-const { turns, messages, isWorking, pendingQuestions, modelName, connected, initializing } = store.project(projectId);
+const {
+  messages,
+  isLoading,
+  pendingQuestions,
+  connected,
+  initializing,
+  sendMessage,
+  stop,
+} = store.project(projectId);
 
-const mode = ref<Mode>("build");
-const scrollArea = ref<HTMLDivElement>();
-const messageQueue = ref<string[]>([]);
+const scrollArea = useTemplateRef("scrollArea");
+const messageQueue = ref<{ text: string; files: FileUIPart[] }[]>([]);
+const chatInput = useTemplateRef<{ focus: () => void }>("chatInput");
 
 // Auto-dequeue when agent finishes
-watch(isWorking, (working, wasWorking) => {
-  if (wasWorking && !working && messageQueue.value.length > 0) {
+watch(isLoading, (loading, wasLoading) => {
+  if (wasLoading && !loading && messageQueue.value.length > 0) {
     const next = messageQueue.value.shift()!;
-    store.sendPrompt(projectId, next, { agent: mode.value });
+    sendMessage(next.text, next.files);
   }
 });
 
-function handleSend(text: string) {
-  if (isWorking.value) {
-    messageQueue.value.push(text);
+function handleSend(text: string, files: FileUIPart[] = []) {
+  if (isLoading.value) {
+    messageQueue.value.push({ text, files });
   } else {
-    store.sendPrompt(projectId, text, { agent: mode.value });
+    sendMessage(text, files);
     stickToBottom.value = true;
     scrollToBottom();
   }
@@ -38,7 +45,7 @@ function removeFromQueue(index: number) {
 }
 
 function handleAbort() {
-  store.abort(projectId);
+  stop();
 }
 
 function handleResolveQuestion(signalId: string, answer: string) {
@@ -75,6 +82,9 @@ onMounted(() => {
   for (const child of el.children) {
     resizeObs.observe(child);
   }
+
+  // Auto-focus the chat input on load
+  chatInput.value?.focus();
 });
 
 onUnmounted(() => {
@@ -95,7 +105,7 @@ watch(initializing, (val, old) => {
   <div class="flex h-full min-h-0 flex-col">
     <div ref="scrollArea" class="min-h-0 flex-1 overflow-y-auto" @scroll="onScroll">
       <div
-        v-if="!turns.length && !isWorking"
+        v-if="!messages.length && !isLoading"
         class="flex h-full items-center justify-center"
       >
         <p class="text-copy text-tertiary">
@@ -105,11 +115,10 @@ watch(initializing, (val, old) => {
 
       <div v-else class="mx-auto max-w-3xl">
         <OChatTurn
-          v-for="(turn, i) in turns"
-          :key="turn.userMessage.info.id"
-          :user-message="turn.userMessage"
-          :assistant-messages="turn.assistantMessages"
-          :is-working="isWorking && i === turns.length - 1"
+          v-for="msg in messages"
+          :key="msg.id"
+          :message="msg"
+          :is-working="isLoading && msg === messages[messages.length - 1] && msg.role === 'assistant'"
           @abort="handleAbort"
         />
       </div>
@@ -117,7 +126,7 @@ watch(initializing, (val, old) => {
 
     <div class="shrink-0">
       <div class="mx-auto max-w-3xl px-4 pb-3">
-        <div class="bg-base-2 rounded-[14px] p-0.5">
+        <div class="bg-base-2 p-0.5">
           <OChatQuestion
             v-for="q in pendingQuestions"
             :key="q.id"
@@ -135,16 +144,14 @@ watch(initializing, (val, old) => {
             @remove="removeFromQueue"
           />
 
-          <div class="bg-base-3 border-edge rounded-xl border">
+          <div class="bg-base-3">
             <OChatInput
+              ref="chatInput"
               :disabled="!connected"
               :placeholder="placeholder || 'Send a message...'"
-              :is-working
-              :model-name="modelName"
-              :mode
-              @send="handleSend"
+              :is-working="isLoading"
+              @send="(text, files) => handleSend(text, files)"
               @abort="handleAbort"
-              @update:mode="mode = $event"
             />
           </div>
         </div>

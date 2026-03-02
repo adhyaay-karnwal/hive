@@ -4,16 +4,6 @@ export default defineNuxtConfig({
   devtools: { enabled: false },
   css: ["~/assets/css/app.css"],
 
-  app: {
-    head: {
-      title: "Hive",
-      meta: [
-        { charset: "utf-8" },
-        { name: "viewport", content: "width=device-width, initial-scale=1" },
-      ],
-    },
-  },
-
   compatibilityDate: "latest",
   ssr: false,
   future: { compatibilityVersion: 4 },

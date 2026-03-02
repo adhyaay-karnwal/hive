@@ -3,16 +3,6 @@ import { projects } from "../../../database/schema";
 import { eq } from "drizzle-orm";
 import simpleGit from "simple-git";
 
-/**
- * Get the current git diff and changed files for a project.
- * Returns the raw unified diff string and a list of changed file paths with status.
- *
- * Handles multiple scenarios:
- * - Normal repo with commits: diff against HEAD
- * - Repo with no commits: show all tracked (staged) files
- * - Unstaged modifications: git diff
- * - Staged changes: git diff --cached
- */
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, "id");
   if (!id) {
@@ -20,7 +10,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const project = await db.query.projects.findFirst({
-    where: eq(projects.id, id),
+    where: { id },
   });
 
   if (!project) {
@@ -68,13 +58,57 @@ export default defineEventHandler(async (event) => {
       diff = await git.diff(["--cached"]);
     }
 
-    console.log(
-      `[changes] project=${id} hasCommits=${hasCommits} files=${files.length} diffBytes=${diff.length}`,
-    );
+    // Get branch name
+    let branch = "";
+    try {
+      const branchResult = await git.revparse(["--abbrev-ref", "HEAD"]);
+      branch = branchResult.trim();
+    } catch {
+      // May fail if no commits exist yet
+    }
 
-    return { diff: diff || "", files };
+    // Get repo name from remote origin URL, fall back to directory basename
+    let repoName = project.path.split("/").filter(Boolean).pop() || "";
+    try {
+      const remotes = await git.getRemotes(true);
+      const origin = remotes.find((r) => r.name === "origin");
+      if (origin?.refs?.fetch) {
+        const url = origin.refs.fetch;
+        // Extract repo name from URL like git@github.com:user/repo.git or https://github.com/user/repo.git
+        const match = url.match(/\/([^/]+?)(?:\.git)?$/) || url.match(/:([^/]+\/[^/]+?)(?:\.git)?$/);
+        if (match) {
+          repoName = match[1];
+        }
+      }
+    } catch {
+      // Ignore — fall back to directory name
+    }
+
+    // Count unpushed commits
+    let unpushedCount = 0;
+    if (hasCommits && branch) {
+      try {
+        const remotes = await git.getRemotes(true);
+        const hasOrigin = remotes.some((r) => r.name === "origin");
+        if (hasOrigin) {
+          // Check if upstream tracking branch exists
+          try {
+            const log = await git.log([`origin/${branch}..HEAD`, "--oneline"]);
+            unpushedCount = log.total;
+          } catch {
+            // No upstream tracking branch — all local commits are unpushed
+            const log = await git.log(["--oneline"]);
+            unpushedCount = log.total;
+          }
+        }
+      } catch {
+        // Ignore — no remote or other issue
+      }
+    }
+
+    return { diff: diff || "", files, branch, repoName, unpushedCount };
   } catch (e: any) {
     console.error(`[changes] Error for project ${id}:`, e.message);
-    return { diff: "", files: [] };
+    return { diff: "", files: [], branch: "", repoName: "", unpushedCount: 0 };
   }
 });

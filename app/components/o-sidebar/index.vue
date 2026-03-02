@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import {
   CodeBracketIcon,
+  FolderIcon,
   BellAlertIcon,
   PlusIcon,
-  PlayIcon,
-  StopIcon,
 } from "@heroicons/vue/16/solid";
 
 const route = useRoute();
@@ -12,6 +11,16 @@ const projectId = computed(() => {
   if (route.params.id) return route.params.id as string;
   return null;
 });
+
+type SidebarView = "worktrees" | "files";
+const activeView = useLocalStorage<SidebarView>("hive:sidebar-view", "worktrees");
+
+const { tree, collapsedPaths, toggleFolder, initCollapsed } = useFileTree();
+const { selectedFile, selectFile } = useChanges();
+
+watch(tree, (nodes) => {
+  if (nodes.length) initCollapsed(nodes);
+}, { immediate: true });
 
 const { data: worktreeList, refresh: refreshWorktrees } = await useFetch(
   "/api/worktrees",
@@ -71,24 +80,34 @@ async function createNewWorktree() {
     creating.value = false;
   }
 }
-
-async function toggleDevServer(wt: any) {
-  if (wt.devServerActive) {
-    await $fetch(`/api/worktrees/${wt.id}/dev-server`, { method: "DELETE" });
-  } else {
-    await $fetch(`/api/worktrees/${wt.id}/dev-server`, { method: "POST" });
-  }
-  await refreshWorktrees();
-}
 </script>
 
 <template>
   <div class="flex h-full flex-col">
-    <OHeader :icon="CodeBracketIcon" title="Worktrees" borderless>
+    <OHeader>
+      <template #leading>
+        <div class="flex items-center gap-0.5">
+          <OButton
+            variant="transparent"
+            :icon-left="CodeBracketIcon"
+            title="Worktrees"
+            :class="activeView === 'worktrees' ? 'text-primary' : 'text-tertiary'"
+            @click="activeView = 'worktrees'"
+          />
+          <OButton
+            variant="transparent"
+            :icon-left="FolderIcon"
+            title="File tree"
+            :class="activeView === 'files' ? 'text-primary' : 'text-tertiary'"
+            @click="activeView = 'files'"
+          />
+        </div>
+      </template>
       <template #trailing>
         <OButton
+          v-if="activeView === 'worktrees'"
           variant="transparent"
-          size="xs"
+         
           :icon-left="PlusIcon"
           :disabled="!projectId"
           @click="showNewBranch = !showNewBranch"
@@ -96,7 +115,8 @@ async function toggleDevServer(wt: any) {
       </template>
     </OHeader>
 
-    <div class="flex-1 overflow-auto p-1.5">
+    <!-- Worktrees view -->
+    <div v-if="activeView === 'worktrees'" class="flex-1 overflow-auto p-1.5">
       <div v-if="showNewBranch" class="mb-1.5 px-1">
         <form @submit.prevent="createNewWorktree" class="flex gap-1">
           <OInput
@@ -109,7 +129,7 @@ async function toggleDevServer(wt: any) {
           <OButton
             type="submit"
             variant="primary"
-            size="md"
+           
             :loading="creating"
             :disabled="!newBranchName"
           >
@@ -120,12 +140,12 @@ async function toggleDevServer(wt: any) {
 
       <div
         v-if="!projectId"
-        class="text-copy-sm text-tertiary px-2 py-4 text-center"
+        class="text-copy text-tertiary px-2 py-4 text-center"
       >
         Open a project first
       </div>
 
-      <div v-else-if="!worktreeList?.length" class="text-copy-sm text-tertiary px-2 py-4 text-center">
+      <div v-else-if="!worktreeList?.length" class="text-copy text-tertiary px-2 py-4 text-center">
         No worktrees yet
       </div>
 
@@ -138,46 +158,46 @@ async function toggleDevServer(wt: any) {
         >
           <div class="flex w-full items-center justify-between px-2 py-1.5">
             <div class="flex min-w-0 items-center gap-2">
-              <CodeBracketIcon class="text-tertiary size-3.5 shrink-0" />
-              <span class="text-copy-sm text-primary truncate">
+              <CodeBracketIcon class="text-tertiary size-4 shrink-0" />
+              <span class="text-copy text-primary truncate">
                 {{ wt.branchName }}
               </span>
             </div>
             <div class="flex items-center gap-1.5">
-              <button
-                type="button"
-                class="text-tertiary hover:text-primary grid size-5 place-items-center rounded"
-                :title="
-                  wt.devServerActive
-                    ? 'Stop dev server'
-                    : 'Start dev server on :3000'
-                "
-                @click.stop="toggleDevServer(wt)"
-              >
-                <component
-                  :is="wt.devServerActive ? StopIcon : PlayIcon"
-                  class="size-3"
-                  :class="wt.devServerActive ? 'text-success' : ''"
-                />
-              </button>
-              <span
-                v-if="wt.opencodePort"
-                class="text-copy-xs text-tertiary"
-              >
-                :{{ wt.opencodePort }}
-              </span>
             </div>
           </div>
         </OHover>
       </div>
     </div>
 
+    <!-- File tree view -->
+    <div v-else class="flex-1 overflow-auto p-1.5">
+      <div
+        v-if="!projectId"
+        class="text-copy text-tertiary px-2 py-4 text-center"
+      >
+        Open a project first
+      </div>
+      <div v-else-if="!tree?.length" class="text-copy text-tertiary px-2 py-4 text-center">
+        No files
+      </div>
+      <OSidebarFileTree
+        v-else
+        :nodes="tree"
+        :selected-file="selectedFile"
+        :collapsed="collapsedPaths"
+        @select="selectFile"
+        @toggle="toggleFolder"
+      />
+    </div>
+
+    <!-- Signals section hidden for now
     <div>
       <OHeader :icon="BellAlertIcon" title="Signals" borderless>
         <template #trailing>
           <span
             v-if="pendingSignals?.length"
-            class="bg-warn text-warn-on text-copy-xs grid size-4 place-items-center rounded-full font-medium"
+            class="bg-warn text-warn-on text-copy grid size-4 place-items-center font-medium"
           >
             {{ pendingSignals.length }}
           </span>
@@ -187,7 +207,7 @@ async function toggleDevServer(wt: any) {
       <div class="max-h-64 overflow-auto p-1.5">
         <div
           v-if="!pendingSignals?.length"
-          class="text-copy-sm text-tertiary px-2 py-4 text-center"
+          class="text-copy text-tertiary px-2 py-4 text-center"
         >
           No signals
         </div>
@@ -201,5 +221,6 @@ async function toggleDevServer(wt: any) {
         </div>
       </div>
     </div>
+    -->
   </div>
 </template>

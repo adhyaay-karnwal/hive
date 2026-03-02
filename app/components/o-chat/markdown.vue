@@ -8,7 +8,8 @@ import { createHighlighter, type Highlighter } from "shiki";
 // This prevents creating 40+ Shiki highlighter instances when rendering
 // a conversation with many code blocks.
 
-const THEME = "github-dark-default";
+const THEME_DARK = "github-dark-default";
+const THEME_LIGHT = "github-light-default";
 
 const commonLanguages = [
   "javascript", "typescript", "jsx", "tsx",
@@ -28,7 +29,7 @@ let highlighterPromise: Promise<Highlighter> | null = null;
 function getHighlighter(): Promise<Highlighter> {
   if (!highlighterPromise) {
     highlighterPromise = createHighlighter({
-      themes: [THEME],
+      themes: [THEME_DARK, THEME_LIGHT],
       langs: commonLanguages,
     });
   }
@@ -45,7 +46,11 @@ function ensureMarked(): Promise<void> {
         markedShiki({
           highlight(code, lang) {
             const language = lang && hl.getLoadedLanguages().includes(lang) ? lang : "text";
-            return hl.codeToHtml(code, { lang: language, theme: THEME });
+            return hl.codeToHtml(code, {
+              lang: language,
+              themes: { dark: THEME_DARK, light: THEME_LIGHT },
+              defaultColor: false,
+            });
           },
         }),
       );
@@ -57,7 +62,10 @@ function ensureMarked(): Promise<void> {
 // Cache is module-level — survives HMR during dev. Clear on code change.
 const renderCache = new Map<string, string>();
 if (import.meta.hot) {
-  import.meta.hot.on("vite:beforeUpdate", () => renderCache.clear());
+  import.meta.hot.on("vite:beforeUpdate", () => {
+    renderCache.clear();
+    markedReady = null;
+  });
 }
 
 async function renderMarkdown(text: string): Promise<string> {
@@ -285,9 +293,20 @@ watch(() => content, async (val) => {
   margin: 0.75em 0;
 }
 
-/* ── Shiki ── */
+/* ── Shiki dual-theme ── */
+
+/* The app defaults to dark (no class on <html>); light mode adds class="light". */
+/* Shiki's defaultColor:false emits --shiki-dark / --shiki-light CSS vars per token. */
 
 .o-markdown .shiki {
   background: transparent !important;
+}
+
+.o-markdown .shiki span {
+  color: var(--shiki-dark) !important;
+}
+
+:root.light .o-markdown .shiki span {
+  color: var(--shiki-light) !important;
 }
 </style>

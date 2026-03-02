@@ -1,39 +1,35 @@
 <script setup lang="ts">
 import {
-  ChevronDownIcon,
   ClipboardIcon,
   CheckIcon,
   StopIcon,
 } from "@heroicons/vue/16/solid";
 import { ArrowPathIcon } from "@heroicons/vue/20/solid";
+import type { UIMessage, FileUIPart } from "ai";
 
-type Part = {
-  type: string;
-  id?: string;
-  text?: string;
-  tool?: string;
-  callID?: string;
-  state?: any;
-  [key: string]: any;
+type DynamicToolPart = {
+  type: "dynamic-tool";
+  toolName: string;
+  toolCallId: string;
+  state: string;
+  input?: any;
+  output?: any;
+  errorText?: string;
 };
 
-type Message = {
-  info: {
-    role: "user" | "assistant";
-    id: string;
-    sessionID: string;
-    time?: { created: number };
-    modelID?: string;
-    providerID?: string;
-    agent?: string;
-    [key: string]: any;
-  };
-  parts: Part[];
+type ReasoningPart = {
+  type: "reasoning";
+  text: string;
+  state?: "streaming" | "done";
 };
+
+type RenderBlock =
+  | { kind: "text"; text: string; id: string }
+  | { kind: "reasoning"; text: string; state?: "streaming" | "done"; id: string }
+  | { kind: "tools"; tools: DynamicToolPart[]; id: string };
 
 type Props = {
-  userMessage: Message;
-  assistantMessages: Message[];
+  message: UIMessage;
   isWorking?: boolean;
 };
 
@@ -41,37 +37,62 @@ type Emits = {
   abort: [];
 };
 
-type RenderBlock =
-  | { kind: "text"; text: string; id: string }
-  | { kind: "tools"; tools: Part[]; id: string };
-
-const { userMessage, assistantMessages, isWorking = false } = defineProps<Props>();
+const { message, isWorking = false } = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
+const isUser = computed(() => message.role === "user");
+
 const userText = computed(() => {
-  return userMessage.parts
-    .filter((p) => p.type === "text" && p.text)
-    .map((p) => p.text!)
-    .join("\n");
+  if (!isUser.value) return "";
+  // User messages have text parts, or fall back to joining all text
+  const textParts = (message.parts ?? []).filter((p) => p.type === "text");
+  if (textParts.length) {
+    return textParts.map((p) => (p as any).text).join("\n");
+  }
+  return "";
 });
 
-// Build sequential render blocks from all assistant messages.
+const imageAttachments = computed<FileUIPart[]>(() => {
+  if (!isUser.value) return [];
+  return (message.parts ?? []).filter(
+    (p): p is FileUIPart => p.type === "file" && (p as FileUIPart).mediaType?.startsWith("image/"),
+  );
+});
+
+// Build sequential render blocks from assistant message parts.
 // Consecutive tool calls are grouped into a single collapsible block.
 // Text parts are individual blocks between tool groups.
 const blocks = computed<RenderBlock[]>(() => {
+  if (isUser.value) return [];
+
   const result: RenderBlock[] = [];
 
-  for (const msg of assistantMessages) {
-    for (const part of msg.parts) {
-      if (part.type === "text" && part.text) {
-        result.push({ kind: "text", text: part.text, id: part.id || `text-${msg.info.id}-${result.length}` });
-      } else if (part.type === "tool") {
-        const last = result[result.length - 1];
-        if (last?.kind === "tools") {
-          last.tools.push(part);
-        } else {
-          result.push({ kind: "tools", tools: [part], id: part.callID || `tools-${msg.info.id}-${result.length}` });
-        }
+  for (const part of message.parts ?? []) {
+    if (part.type === "reasoning") {
+      const rp = part as unknown as ReasoningPart;
+      result.push({
+        kind: "reasoning",
+        text: rp.text,
+        state: rp.state,
+        id: `reasoning-${message.id}-${result.length}`,
+      });
+    } else if (part.type === "text" && (part as any).text) {
+      result.push({
+        kind: "text",
+        text: (part as any).text,
+        id: `text-${message.id}-${result.length}`,
+      });
+    } else if (part.type === "dynamic-tool" || (part.type as string).startsWith("tool-")) {
+      const toolPart = part as unknown as DynamicToolPart;
+      const last = result[result.length - 1];
+      if (last?.kind === "tools") {
+        last.tools.push(toolPart);
+      } else {
+        result.push({
+          kind: "tools",
+          tools: [toolPart],
+          id: toolPart.toolCallId || `tools-${message.id}-${result.length}`,
+        });
       }
     }
   }
@@ -86,26 +107,23 @@ const allText = computed(() =>
     .join("\n\n"),
 );
 
-const totalToolCount = computed(() =>
-  blocks.value.reduce((n, b) => n + (b.kind === "tools" ? b.tools.length : 0), 0),
-);
-
 const statusText = computed(() => {
   if (!isWorking) return "";
-  for (let i = assistantMessages.length - 1; i >= 0; i--) {
-    for (let j = assistantMessages[i].parts.length - 1; j >= 0; j--) {
-      const part = assistantMessages[i].parts[j];
-      if (part.type === "tool") {
-        switch (part.tool) {
-          case "read": return "Gathering context";
-          case "glob": case "grep": case "codesearch": return "Searching codebase";
-          case "edit": case "write": return "Making edits";
-          case "bash": return "Running command";
-          case "webfetch": case "websearch": return "Searching the web";
-          case "task": return "Delegating work";
-          case "todowrite": return "Planning";
-          default: return "Working";
-        }
+
+  // Check the last tool part for a status hint
+  for (let i = (message.parts ?? []).length - 1; i >= 0; i--) {
+    const part = message.parts[i] as any;
+    if (part.type === "dynamic-tool" || (part.type as string)?.startsWith("tool-")) {
+      const toolName = part.toolName;
+      switch (toolName) {
+        case "read": return "Gathering context";
+        case "glob": case "grep": case "codesearch": return "Searching codebase";
+        case "str_replace_based_edit_tool": case "write": return "Making edits";
+        case "bash": return "Running command";
+        case "web_fetch": case "web_search": return "Searching the web";
+        case "spawn_agent": return "Delegating work";
+        case "code_execution": return "Running code";
+        default: return "Working";
       }
     }
   }
@@ -150,46 +168,62 @@ async function copyResponse() {
 </script>
 
 <template>
-  <div class="border-edge border-b py-5 last:border-b-0">
-    <!-- User message -->
+  <!-- User message -->
+  <div v-if="isUser" class="border-edge border-b py-5 last:border-b-0">
     <div class="px-5 pb-3">
-      <div class="bg-surface-1 inline-block max-w-full rounded-xl px-4 py-2.5">
-        <p class="text-copy text-primary whitespace-pre-wrap break-words">{{ userText }}</p>
+      <div class="bg-surface-1 inline-block max-w-full px-4 py-2.5">
+        <!-- Image attachments -->
+        <div v-if="imageAttachments.length" class="mb-2.5 flex flex-wrap gap-2">
+          <img
+            v-for="(img, i) in imageAttachments"
+            :key="i"
+            :src="img.data"
+            class="max-h-48 max-w-full object-contain"
+            :alt="img.filename ?? 'attachment'"
+          />
+        </div>
+        <p v-if="userText" class="text-copy text-primary whitespace-pre-wrap break-words">{{ userText }}</p>
       </div>
     </div>
+  </div>
 
-    <!-- Working indicator -->
+  <!-- Assistant message -->
+  <div v-else class="border-edge border-b py-5 last:border-b-0">
+    <!-- Working indicator when no blocks yet -->
     <div v-if="isWorking && !blocks.length" class="px-5 py-1">
       <div class="flex items-center gap-1.5">
-        <ArrowPathIcon class="text-accent size-3.5 animate-spin" />
-        <span class="text-copy-sm text-secondary">{{ statusText }}</span>
-        <span v-if="formattedDuration" class="text-copy-sm text-tertiary font-mono">
+        <ArrowPathIcon class="text-accent size-4 animate-spin" />
+        <span class="text-copy text-secondary">{{ statusText }}</span>
+        <span v-if="formattedDuration" class="text-copy text-tertiary font-mono">
           · {{ formattedDuration }}
         </span>
-        <button
-          type="button"
-          class="text-tertiary hover:text-danger ml-auto grid size-5 place-items-center rounded transition-colors"
+        <OButton
+          variant="transparent"
+          :icon-left="StopIcon"
+          class="ml-auto hover:text-danger"
           title="Stop (Escape)"
           @click.stop="emit('abort')"
-        >
-          <StopIcon class="size-3" />
-        </button>
+        />
       </div>
     </div>
 
     <!-- Sequential blocks: text and tool groups interleaved -->
     <template v-for="(block, blockIdx) in blocks" :key="block.id">
+      <!-- Reasoning block -->
+      <div v-if="block.kind === 'reasoning'" class="px-5 py-0.5">
+        <OChatReasoning :text="block.text" :state="block.state" />
+      </div>
+
       <!-- Text block -->
-      <div v-if="block.kind === 'text'" class="group/resp relative px-5 py-1">
-        <button
-          type="button"
-          class="absolute top-1 right-5 grid size-6 place-items-center rounded opacity-0 transition-opacity outline-none group-hover/resp:opacity-100"
-          :class="copied ? 'text-accent' : 'text-tertiary hover:text-secondary'"
+      <div v-else-if="block.kind === 'text'" class="group/resp flex items-start gap-1 px-5 py-1">
+        <OChatMarkdown class="min-w-0 flex-1" :content="block.text" />
+        <OButton
+          variant="transparent"
+          :icon-left="copied ? CheckIcon : ClipboardIcon"
+          class="mt-0.5 shrink-0 opacity-0 transition-opacity group-hover/resp:opacity-100"
+          :class="copied ? 'text-accent' : ''"
           @click="copyResponse"
-        >
-          <component :is="copied ? CheckIcon : ClipboardIcon" class="size-3.5" />
-        </button>
-        <OChatMarkdown :content="block.text" />
+        />
       </div>
 
       <!-- Tool call group (collapsible) -->
@@ -207,19 +241,18 @@ async function copyResponse() {
     <!-- Working indicator when actively streaming after existing blocks -->
     <div v-if="isWorking && blocks.length" class="px-5 py-1">
       <div class="flex items-center gap-1.5">
-        <ArrowPathIcon class="text-accent size-3.5 animate-spin" />
-        <span class="text-copy-sm text-secondary">{{ statusText }}</span>
-        <span v-if="formattedDuration" class="text-copy-sm text-tertiary font-mono">
+        <ArrowPathIcon class="text-accent size-4 animate-spin" />
+        <span class="text-copy text-secondary">{{ statusText }}</span>
+        <span v-if="formattedDuration" class="text-copy text-tertiary font-mono">
           · {{ formattedDuration }}
         </span>
-        <button
-          type="button"
-          class="text-tertiary hover:text-danger ml-auto grid size-5 place-items-center rounded transition-colors"
+        <OButton
+          variant="transparent"
+          :icon-left="StopIcon"
+          class="ml-auto hover:text-danger"
           title="Stop (Escape)"
           @click.stop="emit('abort')"
-        >
-          <StopIcon class="size-3" />
-        </button>
+        />
       </div>
     </div>
   </div>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { FileDiffMetadata } from "@pierre/diffs";
 import { diffWordsWithSpace } from "diff";
-import { tokenizeLine, getLangFromPath, type Token } from "~/utils/diff-highlight";
+import { tokenizeLine, tokenizeLines, CONTEXT_LANGS, getLangFromPath, type Token } from "~/utils/diff-highlight";
 
 type ChangeComment = {
   id: string;
@@ -221,35 +221,42 @@ const splitRows = computed<SplitRow[]>(() => {
 const tokenMap = ref(new Map<string, Token[]>());
 
 async function highlightAll() {
-  const lines = new Set<string>();
+  const allLines: string[] = [];
   for (const row of splitRows.value) {
     if (row.kind === "line") {
-      lines.add(row.left.text);
-      lines.add(row.right.text);
+      allLines.push(row.left.text, row.right.text);
     } else if (row.kind === "buffer-left") {
-      lines.add(row.right.text);
+      allLines.push(row.right.text);
     } else if (row.kind === "buffer-right") {
-      lines.add(row.left.text);
+      allLines.push(row.left.text);
     }
   }
 
-  const current = tokenMap.value;
-  const unique = [...lines].filter((l) => l.trim() && !current.has(l));
-  if (!unique.length) return;
+  const updated = new Map(tokenMap.value);
 
-  const results = await Promise.all(
-    unique.map((line) => tokenizeLine(line, lang.value)),
-  );
-
-  const updated = new Map(current);
-  for (let i = 0; i < unique.length; i++) {
-    updated.set(unique[i], results[i]);
+  if (CONTEXT_LANGS.has(lang.value)) {
+    // Tokenize all lines together to preserve grammar context across hunks.
+    // Duplicate lines map to the same tokens regardless so deduplication is fine.
+    const unique = [...new Set(allLines)];
+    if (!unique.length) return;
+    const results = await tokenizeLines(unique, lang.value);
+    for (let i = 0; i < unique.length; i++) {
+      updated.set(unique[i], results[i]);
+    }
+  } else {
+    const unique = [...new Set(allLines)].filter((l) => l.trim() && !updated.has(l));
+    if (!unique.length) return;
+    const results = await Promise.all(unique.map((line) => tokenizeLine(line, lang.value)));
+    for (let i = 0; i < unique.length; i++) {
+      updated.set(unique[i], results[i]);
+    }
   }
+
   tokenMap.value = updated;
 }
 
 function getTokens(text: string): Token[] {
-  return tokenMap.value.get(text) ?? [{ content: text.replace(/\n$/, ""), color: "#fbfbfb" }];
+  return tokenMap.value.get(text) ?? [{ content: text.replace(/\n$/, ""), dark: "#fbfbfb", light: "#24292e" }];
 }
 
 // ── Word-level diff ──

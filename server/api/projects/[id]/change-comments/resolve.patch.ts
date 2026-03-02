@@ -1,16 +1,14 @@
 import { db } from "../../../../database";
 import { changeComments } from "../../../../database/schema";
 import { inArray } from "drizzle-orm";
+import { z } from "zod/v4";
 
-/**
- * Batch resolve change comments by IDs.
- */
+const bodySchema = z.object({
+  ids: z.array(z.string()).min(1),
+});
+
 export default defineEventHandler(async (event) => {
-  const body = await readBody<{ ids: string[] }>(event);
-
-  if (!body.ids?.length) {
-    throw createError({ statusCode: 400, message: "ids array is required" });
-  }
+  const body = await readValidatedBody(event, bodySchema.parse);
 
   await db
     .update(changeComments)

@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { Cog6ToothIcon } from "@heroicons/vue/16/solid";
+import { Cog6ToothIcon, MoonIcon, SunIcon } from "@heroicons/vue/16/solid";
 import { TooltipProvider } from "reka-ui";
 
 const route = useRoute();
 const hasProjectOpen = computed(() => !!route.params.id);
 const { selectedFile } = useChanges();
 const isDiffOpen = computed(() => !!selectedFile.value);
+const { isDark, toggleTheme } = useTheme();
 </script>
 
 <template>
@@ -24,7 +25,13 @@ const isDiffOpen = computed(() => !!selectedFile.value);
       <div class="flex shrink-0 items-center gap-1 pr-2">
         <OButton
           variant="transparent"
-          size="xs"
+         
+          :icon-left="isDark ? SunIcon : MoonIcon"
+          @click="toggleTheme()"
+        />
+        <OButton
+          variant="transparent"
+         
           :icon-left="Cog6ToothIcon"
           to="/settings"
         />
@@ -34,20 +41,20 @@ const isDiffOpen = computed(() => !!selectedFile.value);
     <div class="flex min-h-0 flex-1 gap-1 px-1 pb-1">
       <aside
         v-show="!isDiffOpen"
-        class="flex w-60 shrink-0 flex-col"
+        class="bg-base-1 flex w-60 shrink-0 flex-col overflow-hidden ring-1 ring-edge"
       >
         <OSidebar />
       </aside>
 
       <main
-        class="bg-base-1 relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-lg ring-1 ring-edge"
+        class="bg-base-1 relative flex min-w-0 flex-1 flex-col overflow-hidden ring-1 ring-edge"
       >
         <slot />
       </main>
 
       <aside
         v-if="hasProjectOpen"
-        class="flex w-52 shrink-0 flex-col"
+        class="bg-base-1 flex w-52 shrink-0 flex-col overflow-hidden ring-1 ring-edge"
       >
         <OChangesPanel />
       </aside>

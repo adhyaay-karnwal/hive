@@ -33,25 +33,16 @@ function getFileName(file: string) {
       full-width
       class="cursor-default"
     >
-      <button
-        class="flex w-full items-center gap-2 px-2 py-1 text-left outline-none"
+      <OButton
+        variant="transparent"
+       
+        class="w-full justify-start px-2"
+        :icon-left="getIcon(file)"
+        :class="file.startsWith('+') ? 'text-success' : file.startsWith('-') ? 'text-danger' : ''"
         @click="emit('select', file)"
       >
-        <component
-          :is="getIcon(file)"
-          class="size-3.5 shrink-0"
-          :class="
-            file.startsWith('+')
-              ? 'text-success'
-              : file.startsWith('-')
-                ? 'text-danger'
-                : 'text-tertiary'
-          "
-        />
-        <span class="text-copy-sm text-primary truncate">
-          {{ getFileName(file) }}
-        </span>
-      </button>
+        {{ getFileName(file) }}
+      </OButton>
     </OHover>
   </div>
 </template>

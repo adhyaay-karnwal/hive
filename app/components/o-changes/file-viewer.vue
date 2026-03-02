@@ -27,11 +27,13 @@ type Props = {
 
 const { content, filePath } = defineProps<Props>();
 
+const isImage = computed(() => content.startsWith("data:image/"));
+
 const containerRef = ref<HTMLDivElement>();
 let fileInstance: any = null;
 
 async function renderFile() {
-  if (!containerRef.value || !content) return;
+  if (!containerRef.value || !content || isImage.value) return;
 
   if (fileInstance) {
     fileInstance.cleanUp();
@@ -49,8 +51,6 @@ async function renderFile() {
       disableFileHeader: true,
     });
 
-    // Use containerWrapper so pierre creates its own
-    // <diffs-container> with shadow DOM inside our div
     fileInstance.render({
       file: {
         name: filePath,
@@ -77,5 +77,8 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div ref="containerRef" class="min-h-0" />
+  <div v-if="isImage" class="flex h-full w-full items-center justify-center bg-black p-4">
+    <img :src="content" :alt="filePath" class="max-w-full object-contain" />
+  </div>
+  <div v-else ref="containerRef" class="min-h-0" />
 </template>

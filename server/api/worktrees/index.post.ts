@@ -1,29 +1,23 @@
 import { db } from "../../database";
 import { worktrees, projects } from "../../database/schema";
-import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { createWorktree } from "../../services/worktree";
-import { allocatePort } from "../../services/port-allocator";
-import { installDeps, startOpenCodeServer } from "../../services/process";
+import { installDeps } from "../../services/worktree";
+import { z } from "zod/v4";
+
+const bodySchema = z.object({
+  projectId: z.string().min(1),
+  branchName: z.string().min(1),
+  linearIssueId: z.string().optional(),
+  linearIssueIdentifier: z.string().optional(),
+});
 
 export default defineEventHandler(async (event) => {
-  const body = await readBody<{
-    projectId: string;
-    branchName: string;
-    linearIssueId?: string;
-    linearIssueIdentifier?: string;
-  }>(event);
-
-  if (!body.projectId || !body.branchName) {
-    throw createError({
-      statusCode: 400,
-      message: "projectId and branchName are required",
-    });
-  }
+  const body = await readValidatedBody(event, bodySchema.parse);
 
   // Get the project
   const project = await db.query.projects.findFirst({
-    where: eq(projects.id, body.projectId),
+    where: { id: body.projectId },
   });
 
   if (!project) {
@@ -32,9 +26,6 @@ export default defineEventHandler(async (event) => {
 
   // Create git worktree
   const worktreePath = await createWorktree(project.path, body.branchName);
-
-  // Allocate a port for the OpenCode server
-  const port = await allocatePort();
 
   const id = nanoid();
 
@@ -47,7 +38,6 @@ export default defineEventHandler(async (event) => {
       branchName: body.branchName,
       path: worktreePath,
       status: "active",
-      opencodePort: port,
       linearIssueId: body.linearIssueId,
       linearIssueIdentifier: body.linearIssueIdentifier,
     })
@@ -67,14 +57,5 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  // Start OpenCode server
-  const pid = startOpenCodeServer(worktreePath, port);
-
-  // Update PID in database
-  await db
-    .update(worktrees)
-    .set({ opencodePid: pid })
-    .where(eq(worktrees.id, id));
-
-  return { ...worktree, opencodePid: pid };
+  return worktree;
 });

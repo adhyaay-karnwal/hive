@@ -1,31 +1,29 @@
 import { db } from "../../database";
 import { signals, sessions } from "../../database/schema";
 import { eq } from "drizzle-orm";
+import { z } from "zod/v4";
 
-/**
- * Resolve a signal (answer a question).
- * Called from the UI when the user answers a worker's question.
- */
+const bodySchema = z.object({
+  answer: z.string().min(1),
+});
+
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, "id");
-  const body = await readBody<{ answer: string }>(event);
 
-  if (!id || !body.answer) {
-    throw createError({
-      statusCode: 400,
-      message: "id and answer are required",
-    });
+  if (!id) {
+    throw createError({ statusCode: 400, message: "id is required" });
   }
 
+  const body = await readValidatedBody(event, bodySchema.parse);
+
   const signal = await db.query.signals.findFirst({
-    where: eq(signals.id, id),
+    where: { id },
   });
 
   if (!signal) {
     throw createError({ statusCode: 404, message: "Signal not found" });
   }
 
-  // Resolve the signal
   await db
     .update(signals)
     .set({
@@ -34,7 +32,6 @@ export default defineEventHandler(async (event) => {
     })
     .where(eq(signals.id, id));
 
-  // Update session status back to working
   if (signal.sessionId) {
     await db
       .update(sessions)

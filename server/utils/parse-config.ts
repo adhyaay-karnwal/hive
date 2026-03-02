@@ -6,7 +6,7 @@ export function parseConfig(configOverride: unknown): Record<string, any> {
   if (!configOverride) return {};
 
   if (typeof configOverride === "object" && configOverride !== null) {
-    // Check if it's a valid config (has expected keys like opencodePort)
+    // Check if it's a valid config or a corrupted nested object
     // or if it's a corrupted nested object like {"0":"{","1":"\"", ...}
     const obj = configOverride as Record<string, any>;
     if ("0" in obj && "1" in obj) {

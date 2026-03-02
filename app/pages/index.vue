@@ -39,7 +39,7 @@ async function openNew() {
 <template>
   <div class="flex h-full flex-col items-center justify-center p-8">
     <div v-if="projects?.length" class="mb-8 w-full max-w-sm">
-      <p class="text-copy-sm text-tertiary mb-2 px-1 font-medium uppercase">
+      <p class="text-copy text-tertiary mb-2 px-1 font-medium uppercase">
         Recent projects
       </p>
       <div class="flex flex-col gap-0.5">
@@ -48,24 +48,18 @@ async function openNew() {
           :key="proj.id"
           full-width
           class="cursor-default"
+          @click="openExisting(proj.id)"
         >
-          <button
-            type="button"
-            class="flex w-full items-center gap-3 px-3 py-2 text-left outline-none"
-            @click="openExisting(proj.id)"
-          >
+          <div class="flex w-full items-center gap-3 px-3 py-2">
             <FolderIcon class="text-tertiary size-4 shrink-0" />
             <div class="min-w-0 flex-1">
               <p class="text-copy text-primary truncate">{{ proj.name }}</p>
-              <p class="text-copy-xs text-tertiary truncate">{{ proj.path }}</p>
+              <p class="text-copy text-tertiary truncate">{{ proj.path }}</p>
             </div>
-            <span
-              v-if="proj.pkgManager"
-              class="text-copy-xs text-tertiary shrink-0"
-            >
+            <span v-if="proj.pkgManager" class="text-copy text-tertiary shrink-0">
               {{ proj.pkgManager }}
             </span>
-          </button>
+          </div>
         </OHover>
       </div>
     </div>
@@ -73,19 +67,19 @@ async function openNew() {
     <div class="flex flex-col items-center gap-4">
       <div
         v-if="!projects?.length"
-        class="bg-surface-1 grid size-16 place-items-center rounded-xl"
+        class="bg-surface-1 grid size-16 place-items-center"
       >
         <FolderOpenIcon class="text-tertiary size-8" />
       </div>
       <div v-if="!projects?.length" class="text-center">
-        <h1 class="text-title-sm text-primary">Welcome to Hive</h1>
+        <h1 class="text-copy text-primary">Welcome to Hive</h1>
         <p class="text-copy text-secondary mt-1">
           Open a project to start orchestrating agents.
         </p>
       </div>
       <OButton
         variant="primary"
-        size="md"
+       
         :icon-left="PlusIcon"
         @click="openNew"
       >

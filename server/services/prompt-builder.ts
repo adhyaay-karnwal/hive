@@ -1,62 +1,50 @@
 import { db } from "../database";
-import { devProfile, worktrees } from "../database/schema";
-import { eq } from "drizzle-orm";
+import { devProfile, sessions } from "../database/schema";
+import { eq, and } from "drizzle-orm";
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
+
+/**
+ * Build the full system prompt for the main agent, including
+ * developer profile and active session info.
+ */
+export async function buildSystemPrompt(projectId: string): Promise<string> {
+  const template = loadTemplate("main-agent.md");
+  const profile = await loadDevProfile();
+  const activeSessions = await getActiveSessionsSummary(projectId);
+
+  return template
+    .replace("{{dev_profile}}", profile)
+    .replace("{{active_sessions}}", activeSessions);
+}
+
+/**
+ * Build a prompt for the main orchestrator agent.
+ */
+export async function buildMainPrompt(
+  projectId: string,
+): Promise<string> {
+  return buildSystemPrompt(projectId);
+}
 
 /**
  * Build a prompt for a worker agent by injecting:
  * - Developer profile preferences
  * - Skills (convention files)
  * - Task description
- * - Worktree status context
  */
 export async function buildWorkerPrompt(opts: {
   taskDescription: string;
-  linearIssueDescription?: string;
   worktreeId?: string;
 }): Promise<string> {
   const template = loadTemplate("worker-agent.md");
   const profile = await loadDevProfile();
   const skills = loadSkills();
 
-  let prompt = template
+  return template
     .replace("{{task_description}}", opts.taskDescription)
-    .replace(
-      "{{linear_issue_description}}",
-      opts.linearIssueDescription || "No linked issue.",
-    )
     .replace("{{dev_profile}}", profile)
     .replace("{{skills}}", skills);
-
-  return prompt;
-}
-
-/**
- * Build a prompt for the main orchestrator agent.
- */
-export async function buildMainPrompt(): Promise<string> {
-  const template = loadTemplate("main-agent.md");
-  const profile = await loadDevProfile();
-
-  // Get active worktrees
-  const activeWorktrees = await db
-    .select()
-    .from(worktrees)
-    .where(eq(worktrees.status, "active"));
-
-  const worktreeStatus = activeWorktrees.length
-    ? activeWorktrees
-        .map(
-          (wt) =>
-            `- ${wt.branchName} (port: ${wt.opencodePort}, dev: ${wt.devServerActive ? "active" : "inactive"})`,
-        )
-        .join("\n")
-    : "No active worktrees.";
-
-  return template
-    .replace("{{dev_profile}}", profile)
-    .replace("{{worktree_status}}", worktreeStatus);
 }
 
 /**
@@ -71,6 +59,31 @@ export async function buildReviewerPrompt(diff: string): Promise<string> {
     .replace("{{dev_profile}}", profile)
     .replace("{{skills}}", skills)
     .replace("{{diff}}", diff);
+}
+
+async function getActiveSessionsSummary(
+  projectId: string,
+): Promise<string> {
+  const activeSessions = await db
+    .select()
+    .from(sessions)
+    .where(
+      and(
+        eq(sessions.projectId, projectId),
+        eq(sessions.status, "working"),
+      ),
+    );
+
+  if (!activeSessions.length) {
+    return "No active sub-agent sessions.";
+  }
+
+  return activeSessions
+    .map(
+      (s) =>
+        `- Session ${s.id} (role: ${s.role}, model: ${s.modelPreference}, status: ${s.status})`,
+    )
+    .join("\n");
 }
 
 function loadTemplate(name: string): string {

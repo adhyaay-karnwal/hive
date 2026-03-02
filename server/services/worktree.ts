@@ -1,6 +1,7 @@
 import simpleGit from "simple-git";
 import { existsSync } from "fs";
 import { join, dirname } from "path";
+import { spawn } from "child_process";
 
 /**
  * Create a git worktree for a branch.
@@ -66,6 +67,37 @@ export async function removeWorktree(
 ): Promise<void> {
   const git = simpleGit(projectPath);
   await git.raw(["worktree", "remove", worktreePath, "--force"]);
+}
+
+/**
+ * Install dependencies in a worktree directory.
+ */
+export function installDeps(
+  worktreePath: string,
+  installCommand: string,
+): Promise<{ success: boolean; output: string }> {
+  return new Promise((resolve) => {
+    const [cmd, ...args] = installCommand.split(" ");
+    let output = "";
+
+    const child = spawn(cmd, args, {
+      cwd: worktreePath,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+
+    child.stdout?.on("data", (data: Buffer) => {
+      output += data.toString();
+    });
+    child.stderr?.on("data", (data: Buffer) => {
+      output += data.toString();
+    });
+    child.on("exit", (code) => {
+      resolve({ success: code === 0, output });
+    });
+    child.on("error", (err) => {
+      resolve({ success: false, output: err.message });
+    });
+  });
 }
 
 /**

@@ -1,19 +1,19 @@
 import { db } from "../../../../database";
 import { changeComments } from "../../../../database/schema";
 import { eq, and } from "drizzle-orm";
+import { z } from "zod/v4";
 
-/**
- * List change comments for a project.
- * Query params: ?resolved=false to filter only unresolved.
- */
+const querySchema = z.object({
+  resolved: z.enum(["true", "false"]).optional(),
+});
+
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, "id");
   if (!id) {
     throw createError({ statusCode: 400, message: "id is required" });
   }
 
-  const query = getQuery(event);
-  const resolvedFilter = query.resolved;
+  const { resolved: resolvedFilter } = await getValidatedQuery(event, querySchema.parse);
 
   const conditions = [eq(changeComments.projectId, id)];
 

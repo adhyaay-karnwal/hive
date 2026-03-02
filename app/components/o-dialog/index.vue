@@ -36,13 +36,13 @@ const maxWidthClasses: Record<Size, string> = {
       />
       <DialogContent
         :class="[
-          'bg-base-2 fixed top-[50%] left-[50%] z-100 max-h-[85vh] w-[90vw] translate-x-[-50%] translate-y-[-50%] rounded-[14px] p-0.5 shadow-2xl focus:outline-none',
+          'bg-base-2 fixed top-[50%] left-[50%] z-100 max-h-[85vh] w-[90vw] translate-x-[-50%] translate-y-[-50%] p-0.5 shadow-2xl focus:outline-none',
           maxWidthClasses[size],
         ]"
       >
-        <div class="bg-base-3 border-edge rounded-xl border">
+        <div class="bg-base-3 border-edge border">
           <DialogTitle
-            class="text-primary border-edge border-b px-4 py-3 text-sm font-medium"
+            class="text-primary border-edge border-b px-4 py-3 text-copy font-medium"
           >
             <slot name="title" />
           </DialogTitle>

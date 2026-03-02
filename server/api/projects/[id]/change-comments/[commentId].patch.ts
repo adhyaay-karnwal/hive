@@ -1,6 +1,11 @@
 import { db } from "../../../../database";
 import { changeComments } from "../../../../database/schema";
 import { eq } from "drizzle-orm";
+import { z } from "zod/v4";
+
+const bodySchema = z.object({
+  content: z.string().min(1),
+});
 
 export default defineEventHandler(async (event) => {
   const commentId = getRouterParam(event, "commentId");
@@ -8,10 +13,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: "commentId is required" });
   }
 
-  const body = await readBody<{ content: string }>(event);
-  if (!body.content?.trim()) {
-    throw createError({ statusCode: 400, message: "content is required" });
-  }
+  const body = await readValidatedBody(event, bodySchema.parse);
 
   const [updated] = await db
     .update(changeComments)

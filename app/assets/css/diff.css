@@ -26,7 +26,18 @@
   --diff-bg-selection-number: color-mix(in lab, var(--diff-bg) 60%, var(--diff-selection-base));
   --diff-selection-number-fg: color-mix(in lab, var(--diff-selection-base) 75%, white);
 
-  --diff-font: 'SF Mono', Monaco, Consolas, 'Ubuntu Mono', 'Liberation Mono', 'Courier New', monospace;
+  --diff-font: 'JetBrains Mono', monospace;
   --diff-font-size: 13px;
   --diff-line-height: 20px;
+}
+
+:root.light {
+  --diff-bg: #ffffff;
+  --diff-fg: #1f2328;
+  --diff-fg-number: #8c959f;
+
+  --diff-bg-hover: color-mix(in lab, var(--diff-bg) 91%, black);
+  --diff-bg-context: color-mix(in lab, var(--diff-bg) 92.5%, black);
+  --diff-bg-separator: color-mix(in lab, var(--diff-bg) 85%, black);
+  --diff-bg-buffer: color-mix(in lab, var(--diff-bg) 92%, black);
 }

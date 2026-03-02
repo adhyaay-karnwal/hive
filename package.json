@@ -16,18 +16,20 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.50",
+    "@ai-sdk/vue": "^3.0.105",
     "@heroicons/vue": "^2.2.0",
     "@modelcontextprotocol/sdk": "^1.27.1",
     "@nuxt/fonts": "^0.14.0",
     "@nuxt/icon": "^2.2.1",
-    "@opencode-ai/sdk": "^1.2.15",
     "@pierre/diffs": "^1.0.11",
     "@tailwindcss/vite": "^4.2.1",
     "@vueuse/core": "^14.2.1",
     "@vueuse/nuxt": "^14.2.1",
+    "ai": "^6.0.105",
     "better-sqlite3": "^12.6.2",
     "dompurify": "^3.3.1",
-    "drizzle-orm": "^0.45.1",
+    "drizzle-orm": "^1.0.0-beta.15-859cf75",
     "lucide-vue-next": "^0.575.0",
     "marked": "^17.0.3",
     "marked-shiki": "^1.2.1",
@@ -39,13 +41,14 @@
     "simple-git": "^3.32.3",
     "tailwindcss": "^4.2.1",
     "vue": "^3.5.28",
-    "vue-router": "^4.6.4"
+    "vue-router": "^4.6.4",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
     "@types/dompurify": "^3.2.0",
     "concurrently": "^9.1.2",
-    "drizzle-kit": "^0.31.9",
+    "drizzle-kit": "^1.0.0-beta.15-859cf75",
     "electron": "^35.1.5",
     "electron-builder": "^26.0.12",
     "wait-on": "^8.0.3"
