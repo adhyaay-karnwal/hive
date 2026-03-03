@@ -7,13 +7,16 @@ const isDev = !app.isPackaged;
 const DEV_URL = "http://localhost:3200";
 
 function createWindow() {
+  const isMac = process.platform === "darwin";
+  
   mainWindow = new BrowserWindow({
     width: 1440,
     height: 900,
     minWidth: 1024,
     minHeight: 600,
-    titleBarStyle: "hiddenInset",
-    trafficLightPosition: { x: 16, y: 12 },
+    frame: true, // Keep frame on all platforms for now
+    titleBarStyle: isMac ? "hiddenInset" : "hidden",
+    autoHideMenuBar: true, // Hide the menu bar on all platforms
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
@@ -49,6 +52,29 @@ ipcMain.handle("dialog:openDirectory", async () => {
   }
 
   return result.filePaths[0];
+});
+
+// Window control IPC handlers
+ipcMain.on("window:minimize", () => {
+  if (mainWindow) mainWindow.minimize();
+});
+
+ipcMain.on("window:maximize", () => {
+  if (mainWindow) {
+    if (mainWindow.isMaximized()) {
+      mainWindow.unmaximize();
+    } else {
+      mainWindow.maximize();
+    }
+  }
+});
+
+ipcMain.on("window:close", () => {
+  if (mainWindow) mainWindow.close();
+});
+
+ipcMain.handle("window:isMaximized", () => {
+  return mainWindow ? mainWindow.isMaximized() : false;
 });
 
 // ─── App Lifecycle ───

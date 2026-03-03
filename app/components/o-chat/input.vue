@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowUpIcon, StopIcon, PaperClipIcon, XMarkIcon } from "@heroicons/vue/16/solid";
+import { ArrowUpIcon, StopIcon, PlusIcon, XMarkIcon } from "@heroicons/vue/16/solid";
 import { useTextareaAutosize, useEventListener } from "@vueuse/core";
 import type { FileUIPart } from "ai";
 
@@ -148,10 +148,9 @@ defineExpose({ focus: () => textareaEl.value?.focus() });
     />
 
     <div class="flex items-center justify-between px-2.5 pb-2">
-      <!-- Attach button -->
       <OButton
         variant="transparent"
-        :icon-left="PaperClipIcon"
+        :icon-left="PlusIcon"
         :disabled="props.disabled"
         title="Attach image"
         @click="fileInputEl?.click()"

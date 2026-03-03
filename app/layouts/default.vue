@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Cog6ToothIcon, MoonIcon, SunIcon } from "@heroicons/vue/16/solid";
+import { Cog6ToothIcon, MoonIcon, SunIcon, MinusIcon, XMarkIcon, ArrowsPointingOutIcon, ArrowsPointingInIcon } from "@heroicons/vue/16/solid";
 import { TooltipProvider } from "reka-ui";
 
 const route = useRoute();
@@ -7,6 +7,38 @@ const hasProjectOpen = computed(() => !!route.params.id);
 const { selectedFile } = useChanges();
 const isDiffOpen = computed(() => !!selectedFile.value);
 const { isDark, toggleTheme } = useTheme();
+
+// Window controls
+const isMaximized = ref(false);
+
+async function checkMaximized() {
+  if (window.electronAPI) {
+    isMaximized.value = await window.electronAPI.isMaximized();
+  }
+}
+
+onMounted(() => {
+  checkMaximized();
+});
+
+function minimize() {
+  window.electronAPI?.minimize();
+}
+
+function toggleMaximize() {
+  window.electronAPI?.maximize();
+  checkMaximized();
+}
+
+function close() {
+  window.electronAPI?.close();
+}
+
+// Only show window controls on non-Mac platforms
+const isMac = typeof navigator !== 'undefined' && (
+  navigator.platform.toLowerCase().includes('mac') || 
+  navigator.userAgent.toLowerCase().includes('mac')
+);
 </script>
 
 <template>
@@ -35,12 +67,35 @@ const { isDark, toggleTheme } = useTheme();
           :icon-left="Cog6ToothIcon"
           to="/settings"
         />
+        
+        <!-- Window controls (only show on non-Mac) -->
+        <template v-if="!isMac">
+          <div class="w-2" />
+          <OButton
+            variant="transparent"
+            :icon-left="MinusIcon"
+            title="Minimize"
+            @click="minimize"
+          />
+          <OButton
+            variant="transparent"
+            :icon-left="isMaximized ? ArrowsPointingInIcon : ArrowsPointingOutIcon"
+            :title="isMaximized ? 'Restore' : 'Maximize'"
+            @click="toggleMaximize"
+          />
+          <OButton
+            variant="transparent"
+            :icon-left="XMarkIcon"
+            title="Close"
+            @click="close"
+          />
+        </template>
       </div>
     </header>
 
     <div class="flex min-h-0 flex-1 gap-1 px-1 pb-1">
       <aside
-        v-show="!isDiffOpen"
+        v-show="hasProjectOpen && !isDiffOpen"
         class="bg-base-1 flex w-60 shrink-0 flex-col overflow-hidden ring-1 ring-edge"
       >
         <OSidebar />
