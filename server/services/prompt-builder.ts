@@ -8,6 +8,24 @@ import { join } from "path";
  * Build the full system prompt for the main agent, including
  * developer profile and active session info.
  */
+export async function buildSystemPrompt(projectId: string, mode: "build" | "plan" = "build"): Promise<string> {
+  const template = loadTemplate("main-agent.md");
+  const profile = await loadDevProfile();
+  const activeSessions = await getActiveSessionsSummary(projectId);
+
+  // Add mode-specific instructions
+  const modeInstructions = mode === "plan" 
+    ? "\n\n## Mode: Planning\nYou are in PLANNING mode. Focus on analyzing the codebase, understanding the requirements, and creating a detailed plan before making any changes. Do not modify files unless explicitly requested."
+    : "\n\n## Mode: Building\nYou are in BUILDING mode. You can make changes to the codebase as needed to complete tasks.";
+
+  return template
+    .replace("{{dev_profile}}", profile)
+    .replace("{{active_sessions}}", activeSessions)
+    + modeInstructions;
+}
+ * Build the full system prompt for the main agent, including
+ * developer profile and active session info.
+ */
 export async function buildSystemPrompt(projectId: string): Promise<string> {
   const template = loadTemplate("main-agent.md");
   const profile = await loadDevProfile();
@@ -19,6 +37,14 @@ export async function buildSystemPrompt(projectId: string): Promise<string> {
 }
 
 /**
+ * Build a prompt for the main orchestrator agent.
+ */
+export async function buildMainPrompt(
+  projectId: string,
+  mode: "build" | "plan" = "build",
+): Promise<string> {
+  return buildSystemPrompt(projectId, mode);
+}
  * Build a prompt for the main orchestrator agent.
  */
 export async function buildMainPrompt(

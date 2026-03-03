@@ -3,15 +3,21 @@ import { ArrowUpIcon, StopIcon, PlusIcon, XMarkIcon } from "@heroicons/vue/16/so
 import { useTextareaAutosize, useEventListener } from "@vueuse/core";
 import type { FileUIPart } from "ai";
 
+type Mode = "build" | "plan";
+
 type Props = {
   disabled?: boolean;
   placeholder?: string;
   isWorking?: boolean;
+  modelName?: string;
+  mode?: Mode;
 };
 
 type Emits = {
   send: [text: string, files: FileUIPart[]];
   abort: [];
+  "update:mode": [mode: Mode];
+  "update:model": [model: string];
 };
 
 const emit = defineEmits<Emits>();
@@ -20,6 +26,8 @@ const props = withDefaults(defineProps<Props>(), {
   disabled: false,
   placeholder: "Send a message...",
   isWorking: false,
+  modelName: "claude-sonnet-4-6",
+  mode: "build",
 });
 
 // Textarea with auto-resize
@@ -71,10 +79,23 @@ function handleSend() {
   triggerResize();
 }
 
+function toggleMode() {
+  emit("update:mode", props.mode === "build" ? "plan" : "build");
+}
+
+function toggleModel() {
+  const newModel = props.modelName === "claude-opus-4-6" ? "claude-sonnet-4-6" : "claude-opus-4-6";
+  emit("update:model", newModel);
+}
+
 useEventListener(textareaEl, "keydown", (e: KeyboardEvent) => {
   if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
     handleSend();
+  }
+  if (e.key === "Tab") {
+    e.preventDefault();
+    toggleMode();
   }
   if (e.key === "Escape" && props.isWorking) {
     e.preventDefault();
@@ -148,15 +169,40 @@ defineExpose({ focus: () => textareaEl.value?.focus() });
     />
 
     <div class="flex items-center justify-between px-2.5 pb-2">
-      <OButton
-        variant="transparent"
-        :icon-left="PlusIcon"
-        :disabled="props.disabled"
-        title="Attach image"
-        @click="fileInputEl?.click()"
-      />
+      <div class="flex items-center gap-1">
+        <!-- Build/Plan Mode Toggle -->
+        <button
+          type="button"
+          class="text-copy-xs hover:bg-surface-3 flex items-center gap-1 rounded px-1.5 py-0.5 transition-colors outline-none"
+          :class="props.mode === 'plan' ? 'text-accent' : 'text-tertiary'"
+          :disabled="props.disabled"
+          title="Toggle Build/Plan mode (Tab)"
+          @click="toggleMode"
+        >
+          {{ props.mode === "build" ? "Build" : "Plan" }}
+        </button>
+
+        <!-- Model Name Display (clickable to toggle) -->
+        <button
+          type="button"
+          class="text-copy-xs hover:bg-surface-3 font-mono rounded px-1.5 py-0.5 transition-colors outline-none text-tertiary"
+          :disabled="props.disabled"
+          title="Toggle model"
+          @click="toggleModel"
+        >
+          {{ props.modelName }}
+        </button>
+      </div>
 
       <div class="flex items-center gap-1.5">
+        <OButton
+          variant="transparent"
+          :icon-left="PlusIcon"
+          :disabled="props.disabled"
+          title="Attach image"
+          @click="fileInputEl?.click()"
+        />
+
         <OButton
           v-if="props.isWorking"
           variant="danger-solid"

@@ -29,6 +29,13 @@ export interface RunAgentOptions {
   messages: CoreMessage[];
   projectPath: string;
   modelPreference: "opus" | "sonnet";
+  modePreference?: "build" | "plan";
+  systemPrompt: string;
+  thinkingBudget?: number;
+}
+  messages: CoreMessage[];
+  projectPath: string;
+  modelPreference: "opus" | "sonnet";
   systemPrompt: string;
   thinkingBudget?: number;
 }
@@ -38,6 +45,14 @@ export interface RunAgentOptions {
  * Returns the streaming result from streamText.
  */
 export function runAgent(options: RunAgentOptions) {
+  const {
+    messages,
+    projectPath,
+    modelPreference,
+    modePreference = "build",
+    systemPrompt,
+    thinkingBudget = 10_000,
+  } = options;
   const {
     messages,
     projectPath,

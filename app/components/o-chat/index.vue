@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ChevronDownIcon, CheckIcon } from "@heroicons/vue/16/solid";
 import type { FileUIPart } from "ai";
 
 type Props = {
@@ -19,23 +18,28 @@ const {
   sendMessage,
   stop,
   modelPreference,
+  modePreference,
 } = store.project(projectId);
+
+// Computed model name for display
+const modelName = computed(() =>
+  modelPreference.value === "opus" ? "claude-opus-4-6" : "claude-sonnet-4-6"
+);
+
+// Handle mode changes from input component
+function handleModeUpdate(mode: "build" | "plan") {
+  store.setMode(projectId, mode);
+}
+
+// Handle model changes from input component
+function handleModelUpdate(model: string) {
+  const internalModel = model === "claude-opus-4-6" ? "opus" : "sonnet";
+  store.setModel(projectId, internalModel);
+}
 
 const scrollArea = useTemplateRef("scrollArea");
 const messageQueue = ref<{ text: string; files: FileUIPart[] }[]>([]);
 const chatInput = useTemplateRef<{ focus: () => void }>("chatInput");
-
-// Model selector state
-const modelSelectorOpen = ref(false);
-const models = [
-  { value: "sonnet", label: "Sonnet" },
-  { value: "opus", label: "Opus" },
-] as const;
-
-function setModel(model: "sonnet" | "opus") {
-  store.setModel(projectId, model);
-  modelSelectorOpen.value = false;
-}
 
 // Auto-dequeue when agent finishes
 watch(isLoading, (loading, wasLoading) => {
@@ -142,32 +146,6 @@ watch(initializing, (val, old) => {
     <div class="shrink-0">
       <div class="mx-auto max-w-3xl px-4 pb-3">
         <div class="bg-base-2 p-0.5">
-          <!-- Model Selector -->
-          <div class="border-edge flex items-center justify-between border-b px-3 py-2">
-            <span class="text-copy text-tertiary text-sm"></span>
-            <OPopover v-model:open="modelSelectorOpen">
-              <template #trigger>
-                <button
-                  class="text-primary hover:bg-base-2 flex items-center gap-1 rounded px-2 py-1 text-sm transition-colors"
-                >
-                  {{ modelPreference === "opus" ? "Opus" : "Sonnet" }}
-                  <ChevronDownIcon class="size-4" />
-                </button>
-              </template>
-              <div class="flex flex-col py-1">
-                <button
-                  v-for="model in models"
-                  :key="model.value"
-                  class="text-primary hover:bg-base-2 flex w-full items-center justify-between px-3 py-1.5 text-left text-sm"
-                  @click="setModel(model.value)"
-                >
-                  <span>{{ model.label }}</span>
-                  <CheckIcon v-if="modelPreference === model.value" class="size-4 text-primary" />
-                </button>
-              </div>
-            </OPopover>
-          </div>
-
           <OChatQuestion
             v-for="q in pendingQuestions"
             :key="q.id"
@@ -191,8 +169,12 @@ watch(initializing, (val, old) => {
               :disabled="!connected"
               :placeholder="placeholder || 'Send a message...'"
               :is-working="isLoading"
+              :model-name="modelName"
+              :mode="modePreference"
               @send="(text, files) => handleSend(text, files)"
               @abort="handleAbort"
+              @update:mode="handleModeUpdate"
+              @update:model="handleModelUpdate"
             />
           </div>
         </div>

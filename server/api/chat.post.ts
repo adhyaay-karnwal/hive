@@ -9,7 +9,12 @@ import { runAgent } from "../services/agent";
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
 
-  const { messages, projectId, model } = body as {
+  const { messages, projectId, model, mode } = body as {
+    messages: UIMessage[];
+    projectId: string;
+    model?: "opus" | "sonnet";
+    mode?: "build" | "plan";
+  };
     messages: UIMessage[];
     projectId: string;
     model?: "opus" | "sonnet";
@@ -38,6 +43,18 @@ export default defineEventHandler(async (event) => {
   const modelMessages = await convertToModelMessages(messages);
 
   // Debug: log what tools look like
+  console.log("[chat] messages count:", modelMessages.length);
+  console.log("[chat] model:", model || "sonnet");
+  console.log("[chat] mode:", mode || "build");
+
+  // Run the agent with streaming
+  const result = runAgent({
+    messages: modelMessages,
+    projectPath: project.path,
+    modelPreference: model || "sonnet",
+    systemPrompt,
+    mode: mode || "build",
+  });
   console.log("[chat] messages count:", modelMessages.length);
   console.log("[chat] model:", model || "sonnet");
 

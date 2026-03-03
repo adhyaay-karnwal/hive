@@ -29,6 +29,7 @@ type Signal = {
 type ProjectEntry = {
   chat: Chat<UIMessage>;
   modelPreference: Ref<"opus" | "sonnet">;
+  modePreference: Ref<"build" | "plan">;
   projectName: Ref<string>;
   connected: Ref<boolean>;
   initializing: Ref<boolean>;
@@ -43,6 +44,7 @@ function ensureProject(projectId: string): ProjectEntry {
   if (entry) return entry;
 
   const modelPreference = ref<"opus" | "sonnet">("sonnet");
+  const modePreference = ref<"build" | "plan">("build");
   const projectName = ref("");
   const connected = ref(false);
   const initializing = ref(false);
@@ -54,6 +56,7 @@ function ensureProject(projectId: string): ProjectEntry {
       body: () => ({
         projectId,
         model: modelPreference.value,
+        mode: modePreference.value,
       }),
     }),
     onError: (err) => {
@@ -64,6 +67,7 @@ function ensureProject(projectId: string): ProjectEntry {
   entry = {
     chat,
     modelPreference,
+    modePreference,
     projectName,
     connected,
     initializing,
@@ -168,6 +172,7 @@ export function useHiveStore() {
 
       // Custom state
       modelPreference: entry.modelPreference,
+      modePreference: entry.modePreference,
       projectName: entry.projectName,
       connected: entry.connected,
       initializing: entry.initializing,
@@ -181,6 +186,14 @@ export function useHiveStore() {
   function setModel(projectId: string, model: "opus" | "sonnet") {
     const entry = ensureProject(projectId);
     entry.modelPreference.value = model;
+  }
+
+  /**
+   * Switch mode preference for a project.
+   */
+  function setMode(projectId: string, mode: "build" | "plan") {
+    const entry = ensureProject(projectId);
+    entry.modePreference.value = mode;
   }
 
   /**
@@ -210,6 +223,7 @@ export function useHiveStore() {
     deactivate,
     project,
     setModel,
+    setMode,
     resolveSignal,
   };
 }

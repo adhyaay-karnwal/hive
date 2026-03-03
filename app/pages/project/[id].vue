@@ -8,7 +8,7 @@ const projectId = computed(() => route.params.id as string);
 const { data: projectData } = await useFetch(`/api/projects/${projectId.value}`);
 
 const store = useHiveStore();
-const { connected, initializing, error, clearChat } = store.project(projectId);
+const { connected, initializing, error, clearChat } = store.project(projectId.value);
 
 // Activate on first visit - store handles dedup
 onMounted(() => {
