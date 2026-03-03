@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { ChevronDownIcon, CheckIcon } from "@heroicons/vue/16/solid";
 import type { FileUIPart } from "ai";
+
 type Props = {
   projectId: string;
   placeholder?: string;
@@ -16,11 +18,24 @@ const {
   initializing,
   sendMessage,
   stop,
+  modelPreference,
 } = store.project(projectId);
 
 const scrollArea = useTemplateRef("scrollArea");
 const messageQueue = ref<{ text: string; files: FileUIPart[] }[]>([]);
 const chatInput = useTemplateRef<{ focus: () => void }>("chatInput");
+
+// Model selector state
+const modelSelectorOpen = ref(false);
+const models = [
+  { value: "sonnet", label: "Sonnet" },
+  { value: "opus", label: "Opus" },
+] as const;
+
+function setModel(model: "sonnet" | "opus") {
+  store.setModel(projectId, model);
+  modelSelectorOpen.value = false;
+}
 
 // Auto-dequeue when agent finishes
 watch(isLoading, (loading, wasLoading) => {
@@ -127,6 +142,32 @@ watch(initializing, (val, old) => {
     <div class="shrink-0">
       <div class="mx-auto max-w-3xl px-4 pb-3">
         <div class="bg-base-2 p-0.5">
+          <!-- Model Selector -->
+          <div class="border-edge flex items-center justify-between border-b px-3 py-2">
+            <span class="text-copy text-tertiary text-sm"></span>
+            <OPopover v-model:open="modelSelectorOpen">
+              <template #trigger>
+                <button
+                  class="text-primary hover:bg-base-2 flex items-center gap-1 rounded px-2 py-1 text-sm transition-colors"
+                >
+                  {{ modelPreference === "opus" ? "Opus" : "Sonnet" }}
+                  <ChevronDownIcon class="size-4" />
+                </button>
+              </template>
+              <div class="flex flex-col py-1">
+                <button
+                  v-for="model in models"
+                  :key="model.value"
+                  class="text-primary hover:bg-base-2 flex w-full items-center justify-between px-3 py-1.5 text-left text-sm"
+                  @click="setModel(model.value)"
+                >
+                  <span>{{ model.label }}</span>
+                  <CheckIcon v-if="modelPreference === model.value" class="size-4 text-primary" />
+                </button>
+              </div>
+            </OPopover>
+          </div>
+
           <OChatQuestion
             v-for="q in pendingQuestions"
             :key="q.id"

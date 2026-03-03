@@ -8,17 +8,12 @@ const projectId = computed(() => route.params.id as string);
 const { data: projectData } = await useFetch(`/api/projects/${projectId.value}`);
 
 const store = useHiveStore();
-const { connected, initializing, error, modelPreference, clearChat } = store.project(projectId.value);
+const { connected, initializing, error, clearChat } = store.project(projectId);
 
 // Activate on first visit - store handles dedup
 onMounted(() => {
   store.activate(projectId.value);
 });
-
-function toggleModel() {
-  const next = modelPreference.value === "opus" ? "sonnet" : "opus";
-  store.setModel(projectId.value, next);
-}
 
 // Changes overlay state (shared with OChangesPanel via composable)
 const {
@@ -53,12 +48,6 @@ const isSelectedFileViewed = computed(() =>
           title="Clear chat history"
           @click="clearChat"
         />
-        <OButton
-          variant="outline"
-          @click="toggleModel"
-        >
-          {{ modelPreference === "opus" ? "Opus" : "Sonnet" }}
-        </OButton>
       </template>
     </OHeader>
 
