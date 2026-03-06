@@ -12,6 +12,10 @@ import { createWorktree } from "../worktree";
  */
 export function createSpawnAgentTool(
   projectPath: string,
+  modelPreference: "anthropic-opus" | "anthropic-sonnet" | "gemini-flash" | "gemini-pro",
+  writer?: UIMessageStreamWriter,
+) {
+  projectPath: string,
   modelPreference: "opus" | "sonnet",
   writer?: UIMessageStreamWriter,
 ) {

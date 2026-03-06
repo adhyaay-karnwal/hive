@@ -12,6 +12,11 @@ export default defineEventHandler(async (event) => {
   const { messages, projectId, model, mode } = body as {
     messages: UIMessage[];
     projectId: string;
+    model?: "anthropic-opus" | "anthropic-sonnet" | "gemini-flash" | "gemini-pro";
+    mode?: "build" | "plan";
+  };
+    messages: UIMessage[];
+    projectId: string;
     model?: "opus" | "sonnet";
     mode?: "build" | "plan";
   };
@@ -45,6 +50,13 @@ export default defineEventHandler(async (event) => {
   console.log("[chat] mode:", mode || "build");
 
   // Run the agent with streaming
+  const result = runAgent({
+    messages: modelMessages,
+    projectPath: project.path,
+    modelPreference: model || "anthropic-sonnet",
+    systemPrompt,
+    mode: mode || "build",
+  });
   const result = runAgent({
     messages: modelMessages,
     projectPath: project.path,

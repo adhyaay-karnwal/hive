@@ -7,6 +7,17 @@ import {
   statSync,
 } from "fs";
 import { resolve, dirname } from "path";
+import { tool, jsonSchema } from "ai";
+import type { AnthropicProvider } from "@ai-sdk/anthropic";
+import type { GoogleProvider } from "@ai-sdk/google";
+  readFileSync,
+  writeFileSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  statSync,
+} from "fs";
+import { resolve, dirname } from "path";
 import type { AnthropicProvider } from "@ai-sdk/anthropic";
 
 function resolvePath(basePath: string, filePath: string): string {
@@ -148,6 +159,151 @@ function insertText(
 }
 
 /**
+ * Create a text editor tool scoped to a base directory.
+ * Works with both Anthropic and Gemini providers.
+ */
+export function createTextEditorTool(
+  provider: AnthropicProvider | GoogleProvider,
+  basePath: string,
+) {
+  // Use provider-specific tools if available (Anthropic), otherwise use generic tool
+  if ("tools" in provider && typeof (provider as any).tools.textEditor_20250728 === "function") {
+    return (provider as AnthropicProvider).tools.textEditor_20250728({
+      async execute({ command, path, old_str, new_str, file_text, insert_line, insert_text, view_range }) {
+        const filePath = resolvePath(basePath, path);
+
+        try {
+          switch (command) {
+            case "view":
+              return viewFile(filePath, view_range);
+
+            case "create":
+              if (file_text === undefined) {
+                return "Error: file_text is required for create command.";
+              }
+              return createFile(filePath, file_text);
+
+            case "str_replace":
+              if (old_str === undefined) {
+                return "Error: old_str is required for str_replace command.";
+              }
+              if (new_str === undefined) {
+                return "Error: new_str is required for str_replace command.";
+              }
+              return strReplace(filePath, old_str, new_str);
+
+            case "insert":
+              if (insert_line === undefined) {
+                return "Error: insert_line is required for insert command.";
+              }
+              if (insert_text === undefined) {
+                return "Error: insert_text is required for insert command.";
+              }
+              return insertText(filePath, insert_line, insert_text);
+
+            default:
+              return `Error: Unknown command "${command}".`;
+          }
+        } catch (e: any) {
+          return `Error: ${e.message}`;
+        }
+      },
+    });
+  }
+
+  // Generic tool for Gemini or other providers
+  return tool({
+    description: "View, create, and edit files in the project directory",
+    parameters: jsonSchema<{
+      command: "view" | "create" | "str_replace" | "insert";
+      path: string;
+      old_str?: string;
+      new_str?: string;
+      file_text?: string;
+      insert_line?: number;
+      insert_text?: string;
+      view_range?: [number, number];
+    }>({
+      type: "object",
+      properties: {
+        command: {
+          type: "string",
+          enum: ["view", "create", "str_replace", "insert"],
+          description: "The command to execute",
+        },
+        path: {
+          type: "string",
+          description: "Path to the file (relative to project root)",
+        },
+        old_str: {
+          type: "string",
+          description: "The string to replace (for str_replace command)",
+        },
+        new_str: {
+          type: "string",
+          description: "The replacement string (for str_replace command)",
+        },
+        file_text: {
+          type: "string",
+          description: "The file content (for create command)",
+        },
+        insert_line: {
+          type: "number",
+          description: "Line number to insert at (for insert command)",
+        },
+        insert_text: {
+          type: "string",
+          description: "Text to insert (for insert command)",
+        },
+        view_range: {
+          type: "array",
+          items: { type: "number" },
+          description: "Line range to view [start, end]",
+        },
+      },
+      required: ["command", "path"],
+    }),
+    execute: async ({ command, path, old_str, new_str, file_text, insert_line, insert_text, view_range }) => {
+      const filePath = resolvePath(basePath, path);
+
+      try {
+        switch (command) {
+          case "view":
+            return viewFile(filePath, view_range);
+
+          case "create":
+            if (file_text === undefined) {
+              return "Error: file_text is required for create command.";
+            }
+            return createFile(filePath, file_text);
+
+          case "str_replace":
+            if (old_str === undefined) {
+              return "Error: old_str is required for str_replace command.";
+            }
+            if (new_str === undefined) {
+              return "Error: new_str is required for str_replace command.";
+            }
+            return strReplace(filePath, old_str, new_str);
+
+          case "insert":
+            if (insert_line === undefined) {
+              return "Error: insert_line is required for insert command.";
+            }
+            if (insert_text === undefined) {
+              return "Error: insert_text is required for insert command.";
+            }
+            return insertText(filePath, insert_line, insert_text);
+
+          default:
+            return `Error: Unknown command "${command}".`;
+        }
+      } catch (e: any) {
+        return `Error: ${e.message}`;
+      }
+    },
+  });
+}
  * Create a text editor tool scoped to a base directory.
  * Uses the Anthropic provider-defined text editor tool with a custom execute.
  */

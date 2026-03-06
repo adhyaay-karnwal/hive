@@ -39,6 +39,8 @@ export const sessions = sqliteTable("sessions", {
   parentSessionId: text("parent_session_id"),
   role: text("role", { enum: ["main", "worker", "reviewer"] }).notNull(),
   modelPreference: text("model_preference", {
+    enum: ["anthropic-opus", "anthropic-sonnet", "gemini-flash", "gemini-pro"],
+  })
     enum: ["opus", "sonnet"],
   })
     .notNull()

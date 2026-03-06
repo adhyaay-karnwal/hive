@@ -73,6 +73,12 @@ export async function delegateTask(opts: {
   runAgent({
     messages: [{ role: "user", content: prompt }],
     projectPath: worktreePath,
+    modelPreference: "anthropic-sonnet",
+    systemPrompt: prompt,
+  })
+  runAgent({
+    messages: [{ role: "user", content: prompt }],
+    projectPath: worktreePath,
     modelPreference: "sonnet",
     systemPrompt: prompt,
   })
@@ -155,6 +161,11 @@ export async function triggerReview(worktreeId: string): Promise<string> {
   const reviewPrompt = await buildReviewerPrompt(diff);
 
   runAgent({
+    messages: [{ role: "user", content: reviewPrompt }],
+    projectPath: worktree.path,
+    modelPreference: "anthropic-sonnet",
+    systemPrompt: reviewPrompt,
+  })
     messages: [{ role: "user", content: reviewPrompt }],
     projectPath: worktree.path,
     modelPreference: "sonnet",
