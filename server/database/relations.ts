@@ -7,6 +7,7 @@ export const relations = defineRelations(schema, (r) => ({
     sessions: r.many.sessions(),
     messages: r.many.messages(),
     changeComments: r.many.changeComments(),
+    plans: r.many.plans(),
   },
   worktrees: {
     project: r.one.projects({
@@ -65,6 +66,12 @@ export const relations = defineRelations(schema, (r) => ({
   changeComments: {
     project: r.one.projects({
       from: r.changeComments.projectId,
+      to: r.projects.id,
+    }),
+  },
+  plans: {
+    project: r.one.projects({
+      from: r.plans.projectId,
       to: r.projects.id,
     }),
   },

@@ -33,12 +33,7 @@ export interface RunAgentOptions {
   systemPrompt: string;
   thinkingBudget?: number;
 }
-  messages: CoreMessage[];
-  projectPath: string;
-  modelPreference: "opus" | "sonnet";
-  systemPrompt: string;
-  thinkingBudget?: number;
-}
+
 
 /**
  * Run the agent with streaming, tools, and extended thinking.
@@ -53,25 +48,37 @@ export function runAgent(options: RunAgentOptions) {
     systemPrompt,
     thinkingBudget = 10_000,
   } = options;
-  const {
-    messages,
-    projectPath,
-    modelPreference,
-    systemPrompt,
-    thinkingBudget = 10_000,
-  } = options;
-
   const model = getModel(modelPreference);
 
-  // Build the tool set
-  const tools = {
-    bash: createBashTool(anthropic, projectPath),
-    str_replace_based_edit_tool: createTextEditorTool(anthropic, projectPath),
-    webSearch: anthropic.tools.webSearch_20250305({ maxUses: 10 }),
-    webFetch: anthropic.tools.webFetch_20250910({ maxUses: 10 }),
-    codeExecution: anthropic.tools.codeExecution_20260120(),
-    spawnAgent: createSpawnAgentTool(projectPath, modelPreference),
-  };
+  // Build tool set based on mode - plan mode has read-only tools
+  const isPlanMode = modePreference === "plan";
+  
+  // Plan mode: read-only tools (bash and web for research, but no file editing or spawning)
+  // Build mode: full tools including text editor and spawn agent
+  const tools = isPlanMode
+    ? {
+        // Read-only tools for planning/analysis - can research but not modify files
+        bash: createBashTool(anthropic, projectPath),
+        str_replace_based_edit_tool: createTextEditorTool(anthropic, projectPath),
+        webSearch: anthropic.tools.webSearch_20250305({ maxUses: 10 }),
+        webFetch: anthropic.tools.webFetch_20250910({ maxUses: 10 }),
+        codeExecution: anthropic.tools.codeExecution_20260120(),
+        // Note: spawnAgent disabled in plan mode - must use build mode for implementation
+      }
+    : {
+        // Full tools for building
+        bash: createBashTool(anthropic, projectPath),
+        str_replace_based_edit_tool: createTextEditorTool(anthropic, projectPath),
+        webSearch: anthropic.tools.webSearch_20250305({ maxUses: 10 }),
+        webFetch: anthropic.tools.webFetch_20250910({ maxUses: 10 }),
+        codeExecution: anthropic.tools.codeExecution_20260120(),
+        spawnAgent: createSpawnAgentTool(projectPath, modelPreference),
+      };
+
+  // Higher thinking budget for plan mode (more analysis required)
+  const effectiveThinkingBudget = isPlanMode ? Math.max(thinkingBudget, 30_000) : thinkingBudget;
+
+
 
   return streamText({
     model,
@@ -82,7 +89,7 @@ export function runAgent(options: RunAgentOptions) {
     stopWhen: stepCountIs(100),
     providerOptions: {
       anthropic: {
-        thinking: { type: "enabled", budgetTokens: thinkingBudget },
+        thinking: { type: "enabled", budgetTokens: effectiveThinkingBudget },
         contextManagement: {
           edits: [
             {

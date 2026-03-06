@@ -15,10 +15,7 @@ export default defineEventHandler(async (event) => {
     model?: "opus" | "sonnet";
     mode?: "build" | "plan";
   };
-    messages: UIMessage[];
-    projectId: string;
-    model?: "opus" | "sonnet";
-  };
+
 
   if (!messages || !projectId) {
     throw createError({
@@ -36,8 +33,8 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, message: "Project not found" });
   }
 
-  // Build the system prompt
-  const systemPrompt = await buildMainPrompt(projectId);
+  // Build the system prompt with mode
+  const systemPrompt = await buildMainPrompt(projectId, mode || "build");
 
   // Convert UIMessages from the client to ModelMessages for streamText
   const modelMessages = await convertToModelMessages(messages);
@@ -55,16 +52,7 @@ export default defineEventHandler(async (event) => {
     systemPrompt,
     mode: mode || "build",
   });
-  console.log("[chat] messages count:", modelMessages.length);
-  console.log("[chat] model:", model || "sonnet");
 
-  // Run the agent with streaming
-  const result = runAgent({
-    messages: modelMessages,
-    projectPath: project.path,
-    modelPreference: model || "sonnet",
-    systemPrompt,
-  });
 
   // Return the streaming response compatible with Chat class.
   // Pass originalMessages so the SDK uses persistence mode (assigns stable IDs

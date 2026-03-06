@@ -155,3 +155,25 @@ export const messages = sqliteTable("messages", {
     .$defaultFn(() => new Date()),
 });
 
+// Plans table - stores implementation plans created in Plan mode
+export const plans = sqliteTable("plans", {
+  id: text("id").primaryKey(),
+  projectId: text("project_id")
+    .notNull()
+    .references(() => projects.id),
+  title: text("title").notNull(),
+  content: text("content").notNull(), // JSON string containing the full plan
+  status: text("status", {
+    enum: ["draft", "approved", "rejected", "executed"],
+  })
+    .notNull()
+    .default("draft"),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+});
+
+
