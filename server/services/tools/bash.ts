@@ -1,5 +1,5 @@
 import { spawn, type ChildProcess } from "child_process";
-import type { AnthropicProvider } from "@ai-sdk/anthropic";
+import { tool, jsonSchema } from "ai";
 
 const MAX_OUTPUT_BYTES = 50 * 1024; // 50KB
 const DEFAULT_TIMEOUT_MS = 120_000; // 120s
@@ -133,19 +133,33 @@ function executeCommand(
 
 /**
  * Create a bash tool scoped to a working directory.
- * Returns the Anthropic provider-defined bash tool with execute implementation.
+ * Returns the provider-agnostic bash tool with execute implementation.
  */
 export function createBashTool(
-  anthropic: AnthropicProvider,
+  _provider: any, // Kept for compatibility but not used
   cwd: string,
 ) {
-  return anthropic.tools.bash_20250124({
+  return tool({
+    description: "Run a bash command in the project directory.",
+    inputSchema: jsonSchema<{
+      command?: string;
+      restart?: boolean;
+    }>({
+      type: "object",
+      properties: {
+        command: {
+          type: "string",
+          description: "The bash command to run.",
+        },
+        restart: {
+          type: "boolean",
+          description: "If true, restart the bash session.",
+        },
+      },
+    }),
     execute: async ({
       command,
       restart,
-    }: {
-      command?: string;
-      restart?: boolean;
     }) => {
       if (restart) {
         destroySession(cwd);

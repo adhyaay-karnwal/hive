@@ -12,7 +12,7 @@ import { createWorktree } from "../worktree";
  */
 export function createSpawnAgentTool(
   projectPath: string,
-  modelPreference: "opus" | "sonnet",
+  modelPreference: "opus" | "sonnet" | "gemini-3-pro" | "gemini-3-flash",
   writer?: UIMessageStreamWriter,
 ) {
   return tool({

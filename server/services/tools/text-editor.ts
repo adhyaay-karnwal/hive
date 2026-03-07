@@ -7,7 +7,7 @@ import {
   statSync,
 } from "fs";
 import { resolve, dirname } from "path";
-import type { AnthropicProvider } from "@ai-sdk/anthropic";
+import { tool, jsonSchema } from "ai";
 
 function resolvePath(basePath: string, filePath: string): string {
   // The model tends to prefix paths with /repo (its trained container convention).
@@ -149,13 +149,65 @@ function insertText(
 
 /**
  * Create a text editor tool scoped to a base directory.
- * Uses the Anthropic provider-defined text editor tool with a custom execute.
+ * Returns the provider-agnostic text editor tool with execute implementation.
  */
 export function createTextEditorTool(
-  anthropic: AnthropicProvider,
+  _provider: any, // Kept for compatibility but not used
   basePath: string,
 ) {
-  return anthropic.tools.textEditor_20250728({
+  return tool({
+    description: "View, create, or edit files in the project directory.",
+    inputSchema: jsonSchema<{
+      command: "view" | "create" | "str_replace" | "insert";
+      path: string;
+      old_str?: string;
+      new_str?: string;
+      file_text?: string;
+      insert_line?: number;
+      insert_text?: string;
+      view_range?: [number, number];
+    }>({
+      type: "object",
+      properties: {
+        command: {
+          type: "string",
+          enum: ["view", "create", "str_replace", "insert"],
+          description: "The command to run.",
+        },
+        path: {
+          type: "string",
+          description: "The path to the file.",
+        },
+        old_str: {
+          type: "string",
+          description: "The string to replace.",
+        },
+        new_str: {
+          type: "string",
+          description: "The replacement string.",
+        },
+        file_text: {
+          type: "string",
+          description: "The content of the file to create.",
+        },
+        insert_line: {
+          type: "integer",
+          description: "The line number to insert at.",
+        },
+        insert_text: {
+          type: "string",
+          description: "The text to insert.",
+        },
+        view_range: {
+          type: "array",
+          items: { type: "integer" },
+          minItems: 2,
+          maxItems: 2,
+          description: "The line range to view.",
+        },
+      },
+      required: ["command", "path"],
+    }),
     async execute({ command, path, old_str, new_str, file_text, insert_line, insert_text, view_range }) {
       const filePath = resolvePath(basePath, path);
 
