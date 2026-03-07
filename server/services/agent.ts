@@ -64,23 +64,30 @@ export function runAgent(options: RunAgentOptions) {
   
   // Plan mode: read-only tools (bash and web for research, but no file editing or spawning)
   // Build mode: full tools including text editor and spawn agent
+  const isAnthropic = modelPreference === "opus" || modelPreference === "sonnet";
+
+  // Anthropic-specific provider tools (webSearch, webFetch, codeExecution)
+  const anthropicProviderTools = isAnthropic
+    ? {
+        webSearch: anthropic.tools.webSearch_20250305({ maxUses: 10 }),
+        webFetch: anthropic.tools.webFetch_20250910({ maxUses: 10 }),
+        codeExecution: anthropic.tools.codeExecution_20260120(),
+      }
+    : {};
+
   const tools: ToolSet = isPlanMode
     ? {
         // Read-only tools for planning/analysis - can research but not modify files
         bash: createBashTool(anthropic, projectPath),
         str_replace_based_edit_tool: createTextEditorTool(anthropic, projectPath),
-        webSearch: anthropic.tools.webSearch_20250305({ maxUses: 10 }),
-        webFetch: anthropic.tools.webFetch_20250910({ maxUses: 10 }),
-        codeExecution: anthropic.tools.codeExecution_20260120(),
+        ...anthropicProviderTools,
         // Note: spawnAgent disabled in plan mode - must use build mode for implementation
       }
     : {
         // Full tools for building
         bash: createBashTool(anthropic, projectPath),
         str_replace_based_edit_tool: createTextEditorTool(anthropic, projectPath),
-        webSearch: anthropic.tools.webSearch_20250305({ maxUses: 10 }),
-        webFetch: anthropic.tools.webFetch_20250910({ maxUses: 10 }),
-        codeExecution: anthropic.tools.codeExecution_20260120(),
+        ...anthropicProviderTools,
         spawnAgent: createSpawnAgentTool(projectPath, modelPreference) as any,
       };
 
