@@ -48,6 +48,7 @@ export const sessions = sqliteTable("sessions", {
   })
     .notNull()
     .default("idle"),
+  title: text("title"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .$defaultFn(() => new Date()),
