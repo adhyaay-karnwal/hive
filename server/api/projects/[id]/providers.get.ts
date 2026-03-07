@@ -1,7 +1,6 @@
 /**
- * Previously returned OpenCode provider/model info.
- * No longer needed — model selection is handled client-side.
- * Kept as a stub to avoid 404s from any lingering references.
+ * Returns available AI providers and models.
+ * Model selection is handled client-side.
  */
 export default defineEventHandler(() => {
   return {
@@ -12,13 +11,6 @@ export default defineEventHandler(() => {
       // Gemini models
       { id: "gemini-flash", name: "Gemini 2.0 Flash", provider: "gemini" },
       { id: "gemini-pro", name: "Gemini 2.0 Pro", provider: "gemini" },
-    ],
-  };
-});
-  return {
-    models: [
-      { id: "opus", name: "Claude Opus" },
-      { id: "sonnet", name: "Claude Sonnet" },
     ],
   };
 });

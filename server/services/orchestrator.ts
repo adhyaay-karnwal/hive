@@ -76,12 +76,6 @@ export async function delegateTask(opts: {
     modelPreference: "anthropic-sonnet",
     systemPrompt: prompt,
   })
-  runAgent({
-    messages: [{ role: "user", content: prompt }],
-    projectPath: worktreePath,
-    modelPreference: "sonnet",
-    systemPrompt: prompt,
-  })
     .then(async (result) => {
       // Wait for the stream to complete
       await result.text;
@@ -164,11 +158,6 @@ export async function triggerReview(worktreeId: string): Promise<string> {
     messages: [{ role: "user", content: reviewPrompt }],
     projectPath: worktree.path,
     modelPreference: "anthropic-sonnet",
-    systemPrompt: reviewPrompt,
-  })
-    messages: [{ role: "user", content: reviewPrompt }],
-    projectPath: worktree.path,
-    modelPreference: "sonnet",
     systemPrompt: reviewPrompt,
   })
     .then(async (result) => {

@@ -41,10 +41,8 @@ export const sessions = sqliteTable("sessions", {
   modelPreference: text("model_preference", {
     enum: ["anthropic-opus", "anthropic-sonnet", "gemini-flash", "gemini-pro"],
   })
-    enum: ["opus", "sonnet"],
-  })
     .notNull()
-    .default("sonnet"),
+    .default("anthropic-sonnet"),
   status: text("status", {
     enum: ["idle", "working", "question", "done", "error"],
   })
@@ -177,5 +175,3 @@ export const plans = sqliteTable("plans", {
     .notNull()
     .$defaultFn(() => new Date()),
 });
-
-
