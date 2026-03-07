@@ -5,6 +5,7 @@ export const relations = defineRelations(schema, (r) => ({
   projects: {
     worktrees: r.many.worktrees(),
     sessions: r.many.sessions(),
+    chats: r.many.chats(),
     messages: r.many.messages(),
     changeComments: r.many.changeComments(),
     plans: r.many.plans(),
@@ -16,6 +17,13 @@ export const relations = defineRelations(schema, (r) => ({
     }),
     sessions: r.many.sessions(),
     reviews: r.many.reviews(),
+  },
+  chats: {
+    project: r.one.projects({
+      from: r.chats.projectId,
+      to: r.projects.id,
+    }),
+    messages: r.many.messages(),
   },
   sessions: {
     project: r.one.projects({
@@ -44,6 +52,10 @@ export const relations = defineRelations(schema, (r) => ({
     session: r.one.sessions({
       from: r.messages.sessionId,
       to: r.sessions.id,
+    }),
+    chat: r.one.chats({
+      from: r.messages.chatId,
+      to: r.chats.id,
     }),
     project: r.one.projects({
       from: r.messages.projectId,

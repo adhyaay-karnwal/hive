@@ -45,11 +45,13 @@ const isSelectedFileViewed = computed(() =>
         <OButton
           variant="outline"
           :icon-left="TrashIcon"
-          title="Clear chat history"
+          title="Clear current chat"
           @click="clearChat"
         />
       </template>
     </OHeader>
+
+    <OChatTabs v-if="!initializing && !error" :project-id="projectId" />
 
     <div v-if="initializing" class="flex flex-1 items-center justify-center gap-2">
       <ArrowPathIcon class="text-tertiary size-4 shrink-0 animate-spin" />

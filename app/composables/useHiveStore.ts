@@ -2,16 +2,7 @@
  * Global Hive store.
  *
  * Manages all project chat instances via Vercel AI SDK's `Chat` class.
- * Each project gets its own `Chat` instance stored in a Map.
- * No more WebSocket connections or OpenCode process management.
- *
- * Usage:
- *   const store = useHiveStore()
- *   await store.activate(projectId)          // load project data
- *   const project = store.project(id)        // reactive project state + chat
- *   store.setModel(id, 'opus')               // switch model preference
- *   store.resolveSignal(id, signalId, 'yes') // answer a pending question
- *   store.deactivate(id)                     // cleanup
+ * Each project gets its own Map of Chat instances (one per chat session).
  */
 
 import { Chat } from "@ai-sdk/vue";
@@ -26,18 +17,59 @@ type Signal = {
   resolved: boolean;
 };
 
-type ProjectEntry = {
+type ChatEntry = {
   chat: Chat<UIMessage>;
-  modelPreference: Ref<"opus" | "sonnet" | "gemini-3.1-pro" | "gemini-3-flash">;
-  modePreference: Ref<"build" | "plan">;
+  messages: Ref<UIMessage[]>;
+  status: Ref<string>;
+  error: Ref<Error | undefined>;
+  initialized: boolean;
+};
+
+type ProjectEntry = {
   projectName: Ref<string>;
   connected: Ref<boolean>;
   initializing: Ref<boolean>;
   pendingQuestions: Ref<Signal[]>;
+  modelPreference: Ref<"opus" | "sonnet" | "gemini-3.1-pro" | "gemini-3-flash">;
+  modePreference: Ref<"build" | "plan">;
+  availableChats: Ref<Array<{ id: string; title: string; createdAt: string }>>;
+  activeChatId: Ref<string | null>;
+  chatInstances: Map<string | "null", ChatEntry>;
 };
 
 // Singleton state — survives across component mounts/unmounts
 const projectMap = new Map<string, ProjectEntry>();
+
+function createChatInstance(
+  projectId: string,
+  chatId: string | null,
+  modelPreference: Ref<"opus" | "sonnet" | "gemini-3.1-pro" | "gemini-3-flash">,
+  modePreference: Ref<"build" | "plan">
+): ChatEntry {
+  const chat = new Chat({
+    transport: new DefaultChatTransport({
+      api: "/api/chat",
+      body: () => ({
+        projectId,
+        chatId: chatId || undefined,
+        model: modelPreference.value,
+        mode: modePreference.value,
+      }),
+    }),
+    onError: (err) => {
+      console.error(`[hive:chat:${projectId}:${chatId}]`, err.message);
+    },
+  });
+
+  const state = (chat as any).state;
+  return {
+    chat,
+    messages: state.messagesRef as Ref<UIMessage[]>,
+    status: state.statusRef as Ref<string>,
+    error: state.errorRef as Ref<Error | undefined>,
+    initialized: false,
+  };
+}
 
 function ensureProject(projectId: string): ProjectEntry {
   let entry = projectMap.get(projectId);
@@ -49,29 +81,20 @@ function ensureProject(projectId: string): ProjectEntry {
   const connected = ref(false);
   const initializing = ref(false);
   const pendingQuestions = ref<Signal[]>([]);
-
-  const chat = new Chat({
-    transport: new DefaultChatTransport({
-      api: "/api/chat",
-      body: () => ({
-        projectId,
-        model: modelPreference.value,
-        mode: modePreference.value,
-      }),
-    }),
-    onError: (err) => {
-      console.error(`[hive:chat:${projectId}]`, err.message);
-    },
-  });
+  const availableChats = ref<Array<{ id: string; title: string; createdAt: string }>>([]);
+  const activeChatId = ref<string | null>(null);
+  const chatInstances = new Map<string | "null", ChatEntry>();
 
   entry = {
-    chat,
-    modelPreference,
-    modePreference,
     projectName,
     connected,
     initializing,
     pendingQuestions,
+    modelPreference,
+    modePreference,
+    availableChats,
+    activeChatId,
+    chatInstances,
   };
 
   projectMap.set(projectId, entry);
@@ -80,8 +103,7 @@ function ensureProject(projectId: string): ProjectEntry {
 
 export function useHiveStore() {
   /**
-   * Initialize a project: load project data + chat history, then mark as connected.
-   * Safe to call multiple times — skips if already initialized.
+   * Initialize a project: load project data + chat list, then mark as connected.
    */
   async function activate(projectId: string) {
     const entry = ensureProject(projectId);
@@ -92,29 +114,20 @@ export function useHiveStore() {
     entry.initializing.value = true;
 
     try {
-      // Fetch project metadata and message history in parallel
-      const [data, history] = await Promise.all([
+      // Fetch project metadata and chats list in parallel
+      const [data, chatsList] = await Promise.all([
         $fetch<{ name: string }>(`/api/projects/${projectId}`),
-        $fetch<Array<{ id: string; role: string; content: unknown; createdAt: string }>>(
-          `/api/projects/${projectId}/messages`,
-        ),
+        $fetch<Array<{ id: string; title: string; createdAt: string }>>(`/api/projects/${projectId}/chats`),
       ]);
 
       entry.projectName.value = data?.name ?? "";
+      entry.availableChats.value = chatsList;
 
-      // Seed the Chat instance with persisted messages (only if still empty,
-      // to avoid overwriting messages that arrived during a concurrent stream)
-      const state = (entry.chat as any).state;
-      const messagesRef = state.messagesRef as Ref<UIMessage[]>;
-      if (messagesRef.value.length === 0 && history && history.length > 0) {
-        messagesRef.value = history.map((row) => ({
-          id: row.id,
-          role: row.role as UIMessage["role"],
-          // The DB stores `parts ?? content` — restore whichever shape was saved
-          parts: Array.isArray(row.content) ? (row.content as UIMessage["parts"]) : [],
-          content: typeof row.content === "string" ? row.content : "",
-          createdAt: new Date(row.createdAt),
-        }));
+      // Pick the most recent chat as active, or default to null if none
+      if (chatsList.length > 0) {
+        await switchChat(projectId, chatsList[0].id);
+      } else {
+        await switchChat(projectId, null);
       }
 
       entry.connected.value = true;
@@ -126,51 +139,133 @@ export function useHiveStore() {
   }
 
   /**
+   * Switch active chat for a project.
+   */
+  async function switchChat(projectId: string, chatId: string | null) {
+    const entry = ensureProject(projectId);
+
+    // Stop current chat if it's working
+    const currentIdKey = entry.activeChatId.value || "null";
+    const currentChat = entry.chatInstances.get(currentIdKey);
+    if (currentChat && (currentChat.status.value === "streaming" || currentChat.status.value === "submitted")) {
+      currentChat.chat.stop();
+    }
+
+    entry.activeChatId.value = chatId;
+    const idKey = chatId || "null";
+
+    let chatEntry = entry.chatInstances.get(idKey);
+    if (!chatEntry) {
+      chatEntry = createChatInstance(projectId, chatId, entry.modelPreference, entry.modePreference);
+      entry.chatInstances.set(idKey, chatEntry);
+    }
+
+    if (!chatEntry.initialized) {
+      try {
+        const history = await $fetch<Array<{ id: string; role: string; content: unknown; createdAt: string }>>(
+          `/api/projects/${projectId}/messages`,
+          { query: { chatId: chatId || undefined } },
+        );
+
+        chatEntry.messages.value = history.map((row) => ({
+          id: row.id,
+          role: row.role as UIMessage["role"],
+          parts: Array.isArray(row.content) ? (row.content as UIMessage["parts"]) : [],
+          content: typeof row.content === "string" ? row.content : "",
+          createdAt: new Date(row.createdAt),
+        }));
+        chatEntry.initialized = true;
+      } catch (e: any) {
+        console.error(`[hive:switchChat:${projectId}:${chatId}]`, e.message);
+      }
+    }
+  }
+
+  /**
    * Tear down a project's state.
    */
   function deactivate(projectId: string) {
     const entry = projectMap.get(projectId);
     if (entry) {
-      entry.chat.stop();
+      for (const ce of entry.chatInstances.values()) {
+        ce.chat.stop();
+      }
     }
     projectMap.delete(projectId);
   }
 
   /**
    * Get reactive state for a project.
-   * The Chat class exposes reactive Vue refs for messages, status, and error
-   * via its internal VueChatState.
    */
   function project(projectId: string) {
     const entry = ensureProject(projectId);
-    const chat = entry.chat;
 
-    // Access the internal VueChatState refs for Vue reactivity.
-    // The Chat class's getters (messages, status, error) return plain values,
-    // but the underlying state holds Vue refs that we can bind to templates.
-    const state = (chat as any).state;
-    const messagesRef = state.messagesRef as Ref<UIMessage[]>;
-    const statusRef = state.statusRef as Ref<string>;
-    const errorRef = state.errorRef as Ref<Error | undefined>;
+    const getActiveChatEntry = () => {
+      const idKey = entry.activeChatId.value || "null";
+      let ce = entry.chatInstances.get(idKey);
+      if (!ce) {
+        ce = createChatInstance(projectId, entry.activeChatId.value, entry.modelPreference, entry.modePreference);
+        entry.chatInstances.set(idKey, ce);
+      }
+      return ce;
+    };
 
-    const isLoading = computed(() => statusRef.value === "streaming" || statusRef.value === "submitted");
+    // Proxied computed properties for the active chat
+    const messages = computed({
+      get: () => getActiveChatEntry().messages.value,
+      set: (val) => { getActiveChatEntry().messages.value = val; }
+    });
+    const status = computed(() => getActiveChatEntry().status.value);
+    const error = computed(() => getActiveChatEntry().error.value);
+
+    const isLoading = computed(() => status.value === "streaming" || status.value === "submitted");
 
     return {
-      // Chat reactivity
-      messages: messagesRef,
-      status: statusRef,
+      // Chat reactivity (delegated to active chat)
+      messages,
+      status,
       isLoading,
-      error: errorRef,
+      error,
+
+      // Project-level chat state
+      activeChatId: entry.activeChatId,
+      availableChats: entry.availableChats,
 
       // Chat actions
-      sendMessage: (text: string, files?: FileUIPart[]) => chat.sendMessage({ text, files }),
-      stop: () => chat.stop(),
-      clearChat: async () => {
-        await $fetch(`/api/projects/${projectId}/messages`, { method: "DELETE" });
-        chat.messages = [];
+      sendMessage: (text: string, files?: FileUIPart[]) => getActiveChatEntry().chat.sendMessage({ text, files }),
+      stop: () => getActiveChatEntry().chat.stop(),
+
+      createChat: async (title?: string) => {
+        const newChat = await $fetch<{ id: string; title: string; createdAt: string }>(`/api/projects/${projectId}/chats`, {
+          method: "POST",
+          body: { title: title || `Chat ${entry.availableChats.value.length + 1}` }
+        });
+        entry.availableChats.value.unshift(newChat);
+        await switchChat(projectId, newChat.id);
+        return newChat;
       },
 
-      // Custom state
+      deleteChat: async (chatId: string) => {
+        await $fetch(`/api/chats/${chatId}`, { method: "DELETE" });
+        entry.availableChats.value = entry.availableChats.value.filter((c) => c.id !== chatId);
+        entry.chatInstances.delete(chatId);
+        if (entry.activeChatId.value === chatId) {
+          await switchChat(projectId, entry.availableChats.value[0]?.id || null);
+        }
+      },
+
+      switchChat: (chatId: string | null) => switchChat(projectId, chatId),
+
+      clearChat: async () => {
+        const chatId = entry.activeChatId.value;
+        await $fetch(`/api/projects/${projectId}/messages`, {
+          method: "DELETE",
+          query: { chatId: chatId || undefined },
+        });
+        getActiveChatEntry().messages.value = [];
+      },
+
+      // Global project preferences
       modelPreference: entry.modelPreference,
       modePreference: entry.modePreference,
       projectName: entry.projectName,

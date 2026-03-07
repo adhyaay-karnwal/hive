@@ -11,6 +11,7 @@ const { projectId, placeholder } = defineProps<Props>();
 const store = useHiveStore();
 const {
   messages,
+  activeChatId,
   isLoading,
   pendingQuestions,
   connected,
@@ -145,7 +146,7 @@ watch(initializing, (val, old) => {
       <div v-else class="mx-auto max-w-3xl">
         <OChatTurn
           v-for="msg in messages"
-          :key="msg.id"
+          :key="`${activeChatId}-${msg.id}`"
           :message="msg"
           :is-working="isLoading && msg === messages[messages.length - 1] && msg.role === 'assistant'"
           @abort="handleAbort"
