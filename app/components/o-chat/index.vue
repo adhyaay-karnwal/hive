@@ -60,6 +60,12 @@ watch(isLoading, (loading, wasLoading) => {
   }
 });
 
+// Clear message queue when switching chats to prevent queued messages
+// from being sent to the wrong chat session.
+watch(activeChatId, () => {
+  messageQueue.value = [];
+});
+
 function handleSend(text: string, files: FileUIPart[] = []) {
   if (isLoading.value) {
     messageQueue.value.push({ text, files });

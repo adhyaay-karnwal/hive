@@ -34,12 +34,12 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, message: "Project not found" });
   }
 
-  // Validate chatId if provided
+  // Validate chatId if provided and verify it belongs to the specified project
   if (chatId) {
     const chat = await db.query.chats.findFirst({
       where: { id: chatId },
     });
-    if (!chat) {
+    if (!chat || chat.projectId !== projectId) {
       throw createError({ statusCode: 404, message: "Chat not found" });
     }
   }
