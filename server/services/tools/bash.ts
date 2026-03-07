@@ -1,17 +1,20 @@
 import { spawn, type ChildProcess } from "child_process";
-import type { AnthropicProvider } from "@ai-sdk/anthropic";
+import { tool, jsonSchema } from "ai";
+import { platform } from "os";
 
 const MAX_OUTPUT_BYTES = 50 * 1024; // 50KB
 const DEFAULT_TIMEOUT_MS = 120_000; // 120s
 
-interface BashSession {
+const IS_WINDOWS = platform() === "win32";
+
+interface ShellSession {
   process: ChildProcess;
   cwd: string;
 }
 
-const sessions = new Map<string, BashSession>();
+const sessions = new Map<string, ShellSession>();
 
-function getOrCreateSession(cwd: string): BashSession {
+function getOrCreateSession(cwd: string): ShellSession {
   const key = cwd;
   const existing = sessions.get(key);
 
@@ -24,19 +27,31 @@ function getOrCreateSession(cwd: string): BashSession {
     sessions.delete(key);
   }
 
-  const child = spawn("/bin/bash", ["--norc", "--noprofile", "-i"], {
-    cwd,
-    stdio: ["pipe", "pipe", "pipe"],
-    env: {
-      ...process.env,
-      TERM: "dumb",
-      // Prevent interactive prompts
-      GIT_TERMINAL_PROMPT: "0",
-      DEBIAN_FRONTEND: "noninteractive",
-    },
-  });
+  let child: ChildProcess;
 
-  const session: BashSession = { process: child, cwd };
+  if (IS_WINDOWS) {
+    child = spawn("powershell.exe", ["-NoProfile", "-NoLogo", "-NonInteractive", "-Command", "-"], {
+      cwd,
+      stdio: ["pipe", "pipe", "pipe"],
+      env: {
+        ...process.env,
+        GIT_TERMINAL_PROMPT: "0",
+      },
+    });
+  } else {
+    child = spawn("/bin/bash", ["--norc", "--noprofile", "-i"], {
+      cwd,
+      stdio: ["pipe", "pipe", "pipe"],
+      env: {
+        ...process.env,
+        TERM: "dumb",
+        GIT_TERMINAL_PROMPT: "0",
+        DEBIAN_FRONTEND: "noninteractive",
+      },
+    });
+  }
+
+  const session: ShellSession = { process: child, cwd };
   sessions.set(key, session);
 
   child.on("exit", () => {
@@ -127,29 +142,49 @@ function executeCommand(
     }, timeoutMs);
 
     // Write the command followed by an echo of our marker to stdout
-    proc.stdin.write(`${command}\necho '${marker}'\n`);
+    if (IS_WINDOWS) {
+      proc.stdin.write(`${command}\nWrite-Output '${marker}'\n`);
+    } else {
+      proc.stdin.write(`${command}\necho '${marker}'\n`);
+    }
   });
 }
 
 /**
  * Create a bash tool scoped to a working directory.
- * Returns the Anthropic provider-defined bash tool with execute implementation.
+ * Returns the provider-agnostic bash tool with execute implementation.
  */
 export function createBashTool(
-  anthropic: AnthropicProvider,
+  _provider: any, // Kept for compatibility but not used
   cwd: string,
 ) {
-  return anthropic.tools.bash_20250124({
+  const shellName = IS_WINDOWS ? "PowerShell" : "bash";
+
+  return tool({
+    description: `Run a ${shellName} command in the project directory. The shell is ${shellName} on ${IS_WINDOWS ? "Windows" : process.platform}.`,
+    inputSchema: jsonSchema<{
+      command?: string;
+      restart?: boolean;
+    }>({
+      type: "object",
+      properties: {
+        command: {
+          type: "string",
+          description: `The ${shellName} command to run.`,
+        },
+        restart: {
+          type: "boolean",
+          description: `If true, restart the ${shellName} session.`,
+        },
+      },
+    }),
     execute: async ({
       command,
       restart,
-    }: {
-      command?: string;
-      restart?: boolean;
     }) => {
       if (restart) {
         destroySession(cwd);
-        return "Bash session restarted.";
+        return `${shellName} session restarted.`;
       }
 
       if (!command) {

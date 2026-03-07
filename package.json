@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.50",
+    "@ai-sdk/google": "^3.0.43",
     "@ai-sdk/vue": "^3.0.105",
     "@heroicons/vue": "^2.2.0",
     "@modelcontextprotocol/sdk": "^1.27.1",

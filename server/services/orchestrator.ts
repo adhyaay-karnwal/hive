@@ -76,7 +76,7 @@ export async function delegateTask(opts: {
     modelPreference: "sonnet",
     systemPrompt: prompt,
   })
-    .then(async (result) => {
+    .then(async (result: any) => {
       // Wait for the stream to complete
       await result.text;
       await db
@@ -160,7 +160,7 @@ export async function triggerReview(worktreeId: string): Promise<string> {
     modelPreference: "sonnet",
     systemPrompt: reviewPrompt,
   })
-    .then(async (result) => {
+    .then(async (result: any) => {
       await result.text;
       await db
         .update(sessions)

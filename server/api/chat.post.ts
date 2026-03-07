@@ -12,7 +12,7 @@ export default defineEventHandler(async (event) => {
   const { messages, projectId, model, mode } = body as {
     messages: UIMessage[];
     projectId: string;
-    model?: "opus" | "sonnet";
+    model?: "opus" | "sonnet" | "gemini-3.1-pro" | "gemini-3-flash";
     mode?: "build" | "plan";
   };
 
@@ -50,7 +50,7 @@ export default defineEventHandler(async (event) => {
     projectPath: project.path,
     modelPreference: model || "sonnet",
     systemPrompt,
-    mode: mode || "build",
+    modePreference: mode || "build",
   });
 
 
