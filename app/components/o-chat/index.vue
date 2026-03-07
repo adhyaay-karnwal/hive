@@ -63,6 +63,8 @@ const queuedForChatId = ref<string | null>(activeChatId.value);
 watch(activeChatId, () => {
   messageQueue.value = [];
   queuedForChatId.value = activeChatId.value;
+  stickToBottom.value = true;
+  nextTick(() => scrollToBottom());
 });
 
 // Auto-dequeue when agent finishes — but only if we're still on the

@@ -248,15 +248,17 @@ export function useHiveStore() {
       deleteChat: async (chatId: string) => {
         await $fetch(`/api/chats/${chatId}`, { method: "DELETE" });
         entry.availableChats.value = entry.availableChats.value.filter((c) => c.id !== chatId);
-        if (entry.activeChatId.value === chatId) {
-          await switchChat(projectId, entry.availableChats.value[0]?.id || null);
-        }
-        // Stop the chat instance before removing it to avoid leaked requests
+        // Stop and remove the chat instance before switching to prevent leaks
+        // if switchChat throws, and to avoid getActiveChatEntry() re-creating
+        // a zombie ChatEntry for the deleted chatId during the async gap.
         const deletedEntry = entry.chatInstances.get(chatId);
         if (deletedEntry) {
           deletedEntry.chat.stop();
         }
         entry.chatInstances.delete(chatId);
+        if (entry.activeChatId.value === chatId) {
+          await switchChat(projectId, entry.availableChats.value[0]?.id || null);
+        }
       },
 
       switchChat: (chatId: string | null) => switchChat(projectId, chatId),
