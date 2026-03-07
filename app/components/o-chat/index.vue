@@ -128,6 +128,16 @@ watch(initializing, (val, old) => {
     nextTick(() => scrollToBottom());
   }
 });
+
+// Watch for session changes to reset scroll and focus
+const { activeSessionId } = store.project(projectId);
+watch(activeSessionId, () => {
+  stickToBottom.value = true;
+  nextTick(() => {
+    scrollToBottom();
+    chatInput.value?.focus();
+  });
+});
 </script>
 
 <template>

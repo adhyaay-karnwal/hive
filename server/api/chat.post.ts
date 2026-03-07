@@ -9,9 +9,10 @@ import { runAgent } from "../services/agent";
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
 
-  const { messages, projectId, model, mode } = body as {
+  const { messages, projectId, sessionId, model, mode } = body as {
     messages: UIMessage[];
     projectId: string;
+    sessionId?: string;
     model?: "opus" | "sonnet" | "gemini-3.1-pro" | "gemini-3-flash";
     mode?: "build" | "plan";
   };
@@ -73,6 +74,7 @@ export default defineEventHandler(async (event) => {
           newMessages.map((m) => ({
             id: m.id,
             projectId,
+            sessionId: sessionId || null,
             role: m.role as "user" | "assistant" | "system" | "tool",
             content: m.parts ?? m.content,
             createdAt: new Date(),

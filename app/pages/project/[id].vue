@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CommandLineIcon, TrashIcon } from "@heroicons/vue/16/solid";
+import { CommandLineIcon, TrashIcon, PlusIcon, XMarkIcon } from "@heroicons/vue/16/solid";
 import { ArrowPathIcon } from "@heroicons/vue/20/solid";
 
 const route = useRoute();
@@ -8,7 +8,17 @@ const projectId = computed(() => route.params.id as string);
 const { data: projectData } = await useFetch(`/api/projects/${projectId.value}`);
 
 const store = useHiveStore();
-const { connected, initializing, error, clearChat } = store.project(projectId.value);
+const {
+  connected,
+  initializing,
+  error,
+  clearChat,
+  sessions,
+  activeSessionId,
+  switchSession,
+  deleteSession,
+  createNewSession
+} = store.project(projectId.value);
 
 // Activate on first visit - store handles dedup
 onMounted(() => {
@@ -40,7 +50,44 @@ const isSelectedFileViewed = computed(() =>
     <OHeader
       :icon="CommandLineIcon"
       :title="projectData?.name ?? 'Project'"
+      borderless
     >
+      <template #leading>
+        <div class="ml-4 flex items-center gap-0.5 overflow-x-auto no-scrollbar">
+          <div
+            v-for="session in sessions"
+            :key="session.id"
+            class="group relative flex shrink-0 items-center"
+          >
+            <OHover
+              :active="activeSessionId === session.id"
+              class="cursor-default"
+            >
+              <button
+                class="text-copy max-w-32 truncate whitespace-nowrap py-1 pl-2.5 pr-2 outline-none"
+                :class="activeSessionId === session.id ? 'text-primary' : 'text-tertiary'"
+                @click="switchSession(session.id)"
+              >
+                {{ session.title }}
+              </button>
+            </OHover>
+            <button
+              v-if="sessions.length > 1"
+              class="absolute -right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity hover:text-danger"
+              @click.stop="deleteSession(session.id)"
+            >
+              <XMarkIcon class="size-3" />
+            </button>
+            <div class="w-3" v-if="sessions.length > 1" />
+          </div>
+          <OButton
+            variant="transparent"
+            :icon-left="PlusIcon"
+            title="New chat"
+            @click="createNewSession()"
+          />
+        </div>
+      </template>
       <template #trailing>
         <OButton
           variant="outline"
