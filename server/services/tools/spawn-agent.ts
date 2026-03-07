@@ -1,6 +1,7 @@
 import { tool, jsonSchema, generateId } from "ai";
 import type { UIMessageStreamWriter } from "ai";
 import { createWorktree } from "../worktree";
+import { platform } from "os";
 
 /**
  * Create a tool for spawning sub-agents.
@@ -64,10 +65,17 @@ export function createSpawnAgentTool(
         }
       }
 
+      const isWindows = platform() === "win32";
+      const shellNote = isWindows
+        ? "The user is on Windows. Use PowerShell-compatible commands. Do NOT use Unix-only commands like chmod, sed, awk, or cat (use Get-Content instead)."
+        : "The user is on a Unix system. Use standard bash commands.";
+
       const systemPrompt = [
         "You are a sub-agent working on a specific task.",
         "Complete the task thoroughly and report your results.",
         `Working directory: ${agentCwd}`,
+        `Platform: ${isWindows ? "Windows" : process.platform}`,
+        shellNote,
         "",
         "## Task",
         task,

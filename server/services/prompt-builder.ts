@@ -3,6 +3,37 @@ import { devProfile, sessions } from "../database/schema";
 import { eq, and } from "drizzle-orm";
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
+import { platform, release, homedir } from "os";
+
+function getPlatformContext(): string {
+  const os = platform();
+  const osRelease = release();
+  const home = homedir();
+
+  if (os === "win32") {
+    return [
+      "## Platform",
+      `- OS: Windows (${osRelease})`,
+      `- Home directory: ${home}`,
+      "- Default shell: PowerShell",
+      "- Use PowerShell-compatible commands (e.g. `Get-ChildItem` instead of `ls`, `Remove-Item` instead of `rm`, `Select-String` instead of `grep`).",
+      "- Use semicolons or separate lines to chain commands, not `&&`.",
+      "- Path separators are backslashes (`\\`), but forward slashes (`/`) generally work too.",
+      "- Use `$env:VAR` for environment variables, not `$VAR`.",
+      "- Common tools like `git`, `node`, `npm`, `bun` work the same across platforms.",
+      "- Do NOT use Unix-only commands like `chmod`, `chown`, `sed`, `awk`, `cat` (use `Get-Content`), `touch` (use `New-Item`), `which` (use `Get-Command`).",
+    ].join("\n");
+  }
+
+  const osName = os === "darwin" ? "macOS" : "Linux";
+  return [
+    "## Platform",
+    `- OS: ${osName} (${osRelease})`,
+    `- Home directory: ${home}`,
+    "- Default shell: bash",
+    "- Use standard Unix/bash commands.",
+  ].join("\n");
+}
 
 /**
  * Build the full system prompt for the main agent, including
@@ -20,7 +51,7 @@ export async function buildSystemPrompt(projectId: string, mode: "build" | "plan
     
   const profile = await loadDevProfile();
   const activeSessions = await getActiveSessionsSummary(projectId);
-
+  const platformContext = getPlatformContext();
 
   // Add mode-specific instructions
   const modeInstructions = mode === "plan" 
@@ -30,6 +61,7 @@ export async function buildSystemPrompt(projectId: string, mode: "build" | "plan
   return templateContent
     .replace("{{dev_profile}}", profile)
     .replace("{{active_sessions}}", activeSessions)
+    + "\n\n" + platformContext
     + modeInstructions;
 }
 
@@ -50,6 +82,7 @@ export async function buildMainPrompt(
  * - Developer profile preferences
  * - Skills (convention files)
  * - Task description
+ * - Platform context
  */
 export async function buildWorkerPrompt(opts: {
   taskDescription: string;
@@ -58,11 +91,13 @@ export async function buildWorkerPrompt(opts: {
   const template = loadTemplate("worker-agent.md");
   const profile = await loadDevProfile();
   const skills = loadSkills();
+  const platformContext = getPlatformContext();
 
   return template
     .replace("{{task_description}}", opts.taskDescription)
     .replace("{{dev_profile}}", profile)
-    .replace("{{skills}}", skills);
+    .replace("{{skills}}", skills)
+    + "\n\n" + platformContext;
 }
 
 /**
