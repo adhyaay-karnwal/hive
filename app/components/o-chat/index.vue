@@ -26,7 +26,7 @@ const modelName = computed(() => {
   switch (modelPreference.value) {
     case "opus": return "claude-opus-4-6";
     case "sonnet": return "claude-sonnet-4-6";
-    case "gemini-3-pro": return "gemini-3-pro";
+    case "gemini-3.1-pro": return "gemini-3.1-pro";
     case "gemini-3-flash": return "gemini-3-flash";
     default: return "claude-sonnet-4-6";
   }
@@ -39,9 +39,9 @@ function handleModeUpdate(mode: "build" | "plan") {
 
 // Handle model changes from input component
 function handleModelUpdate(model: string) {
-  let internalModel: "opus" | "sonnet" | "gemini-3-pro" | "gemini-3-flash" = "sonnet";
+  let internalModel: "opus" | "sonnet" | "gemini-3.1-pro" | "gemini-3-flash" = "sonnet";
   if (model === "claude-opus-4-6") internalModel = "opus";
-  else if (model === "gemini-3-pro") internalModel = "gemini-3-pro";
+  else if (model === "gemini-3.1-pro") internalModel = "gemini-3.1-pro";
   else if (model === "gemini-3-flash") internalModel = "gemini-3-flash";
 
   store.setModel(projectId, internalModel);

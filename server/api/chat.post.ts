@@ -12,7 +12,7 @@ export default defineEventHandler(async (event) => {
   const { messages, projectId, model, mode } = body as {
     messages: UIMessage[];
     projectId: string;
-    model?: "opus" | "sonnet" | "gemini-3-pro" | "gemini-3-flash";
+    model?: "opus" | "sonnet" | "gemini-3.1-pro" | "gemini-3-flash";
     mode?: "build" | "plan";
   };
 

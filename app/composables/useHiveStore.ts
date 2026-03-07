@@ -28,7 +28,7 @@ type Signal = {
 
 type ProjectEntry = {
   chat: Chat<UIMessage>;
-  modelPreference: Ref<"opus" | "sonnet" | "gemini-3-pro" | "gemini-3-flash">;
+  modelPreference: Ref<"opus" | "sonnet" | "gemini-3.1-pro" | "gemini-3-flash">;
   modePreference: Ref<"build" | "plan">;
   projectName: Ref<string>;
   connected: Ref<boolean>;
@@ -43,7 +43,7 @@ function ensureProject(projectId: string): ProjectEntry {
   let entry = projectMap.get(projectId);
   if (entry) return entry;
 
-  const modelPreference = ref<"opus" | "sonnet" | "gemini-3-pro" | "gemini-3-flash">("sonnet");
+  const modelPreference = ref<"opus" | "sonnet" | "gemini-3.1-pro" | "gemini-3-flash">("sonnet");
   const modePreference = ref<"build" | "plan">("build");
   const projectName = ref("");
   const connected = ref(false);
@@ -183,7 +183,7 @@ export function useHiveStore() {
   /**
    * Switch model preference for a project.
    */
-  function setModel(projectId: string, model: "opus" | "sonnet" | "gemini-3-pro" | "gemini-3-flash") {
+  function setModel(projectId: string, model: "opus" | "sonnet" | "gemini-3.1-pro" | "gemini-3-flash") {
     const entry = ensureProject(projectId);
     entry.modelPreference.value = model;
   }

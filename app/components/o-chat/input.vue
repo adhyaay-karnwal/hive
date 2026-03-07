@@ -84,7 +84,7 @@ function toggleMode() {
 }
 
 function toggleModel() {
-  const models = ["claude-sonnet-4-6", "claude-opus-4-6", "gemini-3-pro", "gemini-3-flash"];
+  const models = ["claude-sonnet-4-6", "claude-opus-4-6", "gemini-3.1-pro", "gemini-3-flash"];
   const currentIndex = models.indexOf(props.modelName || "claude-sonnet-4-6");
   const nextIndex = (currentIndex + 1) % models.length;
   emit("update:model", models[nextIndex]);

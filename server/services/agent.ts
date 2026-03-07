@@ -21,8 +21,8 @@ export const anthropic = createAnthropic({
 /**
  * Get the model instance for a given preference.
  */
-export function getModel(preference: "opus" | "sonnet" | "gemini-3-pro" | "gemini-3-flash") {
-  if (preference === "gemini-3-pro") {
+export function getModel(preference: "opus" | "sonnet" | "gemini-3.1-pro" | "gemini-3-flash") {
+  if (preference === "gemini-3.1-pro") {
     return google("gemini-3.1-pro-preview");
   }
   if (preference === "gemini-3-flash") {
@@ -37,7 +37,7 @@ export function getModel(preference: "opus" | "sonnet" | "gemini-3-pro" | "gemin
 export interface RunAgentOptions {
   messages: ModelMessage[];
   projectPath: string;
-  modelPreference: "opus" | "sonnet" | "gemini-3-pro" | "gemini-3-flash";
+  modelPreference: "opus" | "sonnet" | "gemini-3.1-pro" | "gemini-3-flash";
   modePreference?: "build" | "plan";
   systemPrompt: string;
   thinkingBudget?: number;
@@ -119,7 +119,7 @@ export function runAgent(options: RunAgentOptions) {
         ],
       },
     } satisfies AnthropicLanguageModelOptions;
-  } else if (modelPreference === "gemini-3-pro" || modelPreference === "gemini-3-flash") {
+  } else if (modelPreference === "gemini-3.1-pro" || modelPreference === "gemini-3-flash") {
     providerOptions.google = {
       thinkingConfig: {
         includeThoughts: true,
