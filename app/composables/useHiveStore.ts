@@ -251,6 +251,11 @@ export function useHiveStore() {
         if (entry.activeChatId.value === chatId) {
           await switchChat(projectId, entry.availableChats.value[0]?.id || null);
         }
+        // Stop the chat instance before removing it to avoid leaked requests
+        const deletedEntry = entry.chatInstances.get(chatId);
+        if (deletedEntry) {
+          deletedEntry.chat.stop();
+        }
         entry.chatInstances.delete(chatId);
       },
 
