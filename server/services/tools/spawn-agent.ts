@@ -15,10 +15,6 @@ export function createSpawnAgentTool(
   modelPreference: "anthropic-opus" | "anthropic-sonnet" | "gemini-flash" | "gemini-pro",
   writer?: UIMessageStreamWriter,
 ) {
-  projectPath: string,
-  modelPreference: "opus" | "sonnet",
-  writer?: UIMessageStreamWriter,
-) {
   return tool({
     description:
       "Spawn a sub-agent to work on a task. " +

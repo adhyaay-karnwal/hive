@@ -2,7 +2,6 @@ import { spawn, type ChildProcess } from "child_process";
 import { tool, jsonSchema } from "ai";
 import type { AnthropicProvider } from "@ai-sdk/anthropic";
 import type { GoogleProvider } from "@ai-sdk/google";
-import type { AnthropicProvider } from "@ai-sdk/anthropic";
 
 const MAX_OUTPUT_BYTES = 50 * 1024; // 50KB
 const DEFAULT_TIMEOUT_MS = 120_000; // 120s
@@ -191,39 +190,6 @@ export function createBashTool(
       },
     }),
     execute: async ({ command, restart }) => {
-      if (restart) {
-        destroySession(cwd);
-        return "Bash session restarted.";
-      }
-
-      if (!command) {
-        return "No command provided.";
-      }
-
-      // The model is trained on a /repo container convention.
-      // Rewrite /repo references to the actual project path.
-      const rewritten = command.replaceAll("/repo/", `${cwd}/`).replaceAll("/repo", cwd);
-
-      const result = await executeCommand(cwd, rewritten);
-      return result || "(no output)";
-    },
-  });
-}
- * Create a bash tool scoped to a working directory.
- * Returns the Anthropic provider-defined bash tool with execute implementation.
- */
-export function createBashTool(
-  anthropic: AnthropicProvider,
-  cwd: string,
-) {
-  return anthropic.tools.bash_20250124({
-    execute: async ({
-      command,
-      restart,
-    }: {
-      command?: string;
-      restart?: boolean;
-    }) => {
       if (restart) {
         destroySession(cwd);
         return "Bash session restarted.";

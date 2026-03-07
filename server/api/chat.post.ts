@@ -15,11 +15,6 @@ export default defineEventHandler(async (event) => {
     model?: "anthropic-opus" | "anthropic-sonnet" | "gemini-flash" | "gemini-pro";
     mode?: "build" | "plan";
   };
-    messages: UIMessage[];
-    projectId: string;
-    model?: "opus" | "sonnet";
-    mode?: "build" | "plan";
-  };
 
 
   if (!messages || !projectId) {
@@ -46,7 +41,7 @@ export default defineEventHandler(async (event) => {
 
   // Debug: log what tools look like
   console.log("[chat] messages count:", modelMessages.length);
-  console.log("[chat] model:", model || "sonnet");
+  console.log("[chat] model:", model || "anthropic-sonnet");
   console.log("[chat] mode:", mode || "build");
 
   // Run the agent with streaming
@@ -54,13 +49,6 @@ export default defineEventHandler(async (event) => {
     messages: modelMessages,
     projectPath: project.path,
     modelPreference: model || "anthropic-sonnet",
-    systemPrompt,
-    mode: mode || "build",
-  });
-  const result = runAgent({
-    messages: modelMessages,
-    projectPath: project.path,
-    modelPreference: model || "sonnet",
     systemPrompt,
     mode: mode || "build",
   });

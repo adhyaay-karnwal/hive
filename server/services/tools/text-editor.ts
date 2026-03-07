@@ -10,15 +10,6 @@ import { resolve, dirname } from "path";
 import { tool, jsonSchema } from "ai";
 import type { AnthropicProvider } from "@ai-sdk/anthropic";
 import type { GoogleProvider } from "@ai-sdk/google";
-  readFileSync,
-  writeFileSync,
-  existsSync,
-  mkdirSync,
-  readdirSync,
-  statSync,
-} from "fs";
-import { resolve, dirname } from "path";
-import type { AnthropicProvider } from "@ai-sdk/anthropic";
 
 function resolvePath(basePath: string, filePath: string): string {
   // The model tends to prefix paths with /repo (its trained container convention).
@@ -264,55 +255,6 @@ export function createTextEditorTool(
       required: ["command", "path"],
     }),
     execute: async ({ command, path, old_str, new_str, file_text, insert_line, insert_text, view_range }) => {
-      const filePath = resolvePath(basePath, path);
-
-      try {
-        switch (command) {
-          case "view":
-            return viewFile(filePath, view_range);
-
-          case "create":
-            if (file_text === undefined) {
-              return "Error: file_text is required for create command.";
-            }
-            return createFile(filePath, file_text);
-
-          case "str_replace":
-            if (old_str === undefined) {
-              return "Error: old_str is required for str_replace command.";
-            }
-            if (new_str === undefined) {
-              return "Error: new_str is required for str_replace command.";
-            }
-            return strReplace(filePath, old_str, new_str);
-
-          case "insert":
-            if (insert_line === undefined) {
-              return "Error: insert_line is required for insert command.";
-            }
-            if (insert_text === undefined) {
-              return "Error: insert_text is required for insert command.";
-            }
-            return insertText(filePath, insert_line, insert_text);
-
-          default:
-            return `Error: Unknown command "${command}".`;
-        }
-      } catch (e: any) {
-        return `Error: ${e.message}`;
-      }
-    },
-  });
-}
- * Create a text editor tool scoped to a base directory.
- * Uses the Anthropic provider-defined text editor tool with a custom execute.
- */
-export function createTextEditorTool(
-  anthropic: AnthropicProvider,
-  basePath: string,
-) {
-  return anthropic.tools.textEditor_20250728({
-    async execute({ command, path, old_str, new_str, file_text, insert_line, insert_text, view_range }) {
       const filePath = resolvePath(basePath, path);
 
       try {
