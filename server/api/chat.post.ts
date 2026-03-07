@@ -2,7 +2,7 @@ import { defineEventHandler, readBody } from "h3";
 import { convertToModelMessages, generateId } from "ai";
 import type { UIMessage } from "ai";
 import { db } from "../database";
-import { projects, messages as messagesTable } from "../database/schema";
+import { projects, chats, messages as messagesTable } from "../database/schema";
 import { buildMainPrompt } from "../services/prompt-builder";
 import { runAgent } from "../services/agent";
 
@@ -32,6 +32,16 @@ export default defineEventHandler(async (event) => {
 
   if (!project) {
     throw createError({ statusCode: 404, message: "Project not found" });
+  }
+
+  // Validate chatId if provided
+  if (chatId) {
+    const chat = await db.query.chats.findFirst({
+      where: { id: chatId },
+    });
+    if (!chat) {
+      throw createError({ statusCode: 404, message: "Chat not found" });
+    }
   }
 
   // Build the system prompt with mode

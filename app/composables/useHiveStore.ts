@@ -248,10 +248,10 @@ export function useHiveStore() {
       deleteChat: async (chatId: string) => {
         await $fetch(`/api/chats/${chatId}`, { method: "DELETE" });
         entry.availableChats.value = entry.availableChats.value.filter((c) => c.id !== chatId);
-        entry.chatInstances.delete(chatId);
         if (entry.activeChatId.value === chatId) {
           await switchChat(projectId, entry.availableChats.value[0]?.id || null);
         }
+        entry.chatInstances.delete(chatId);
       },
 
       switchChat: (chatId: string | null) => switchChat(projectId, chatId),
