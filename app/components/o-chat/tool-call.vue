@@ -33,6 +33,15 @@ type Props = {
 const { tool } = defineProps<Props>();
 const expanded = ref(false);
 
+// Auto-expand when tool starts running, auto-collapse when it finishes.
+watch(() => tool.state, (state, oldState) => {
+  if (state === 'input-streaming' || state === 'input-available' || state === 'approval-requested') {
+    expanded.value = true;
+  } else if (state === 'output-available' || state === 'output-error') {
+    expanded.value = false;
+  }
+}, { immediate: true });
+
 function shortPath(p: string): string {
   if (!p) return "";
   const parts = p.replace(/^\/+/, "").split("/");

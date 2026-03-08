@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowUpIcon, StopIcon, PlusIcon, XMarkIcon } from "@heroicons/vue/16/solid";
+import { ArrowUpIcon, StopIcon, PlusIcon, XMarkIcon, ChevronDownIcon, CheckIcon } from "@heroicons/vue/16/solid";
 import { useTextareaAutosize, useEventListener } from "@vueuse/core";
 import type { FileUIPart } from "ai";
 
@@ -83,11 +83,28 @@ function toggleMode() {
   emit("update:mode", props.mode === "build" ? "plan" : "build");
 }
 
-function toggleModel() {
-  const models = ["claude-sonnet-4-6", "claude-opus-4-6", "gemini-3.1-pro", "gemini-3-flash"];
-  const currentIndex = models.indexOf(props.modelName || "claude-sonnet-4-6");
-  const nextIndex = (currentIndex + 1) % models.length;
-  emit("update:model", models[nextIndex]);
+const showModelPicker = ref(false);
+
+const modelOptions = [
+  {
+    group: "Anthropic",
+    models: [
+      { id: "claude-sonnet-4-6", name: "Claude 3.5 Sonnet" },
+      { id: "claude-opus-4-6", name: "Claude 3 Opus" },
+    ],
+  },
+  {
+    group: "Google",
+    models: [
+      { id: "gemini-3.1-pro", name: "Gemini 1.5 Pro" },
+      { id: "gemini-3-flash", name: "Gemini 1.5 Flash" },
+    ],
+  },
+];
+
+function selectModel(modelId: string) {
+  emit("update:model", modelId);
+  showModelPicker.value = false;
 }
 
 useEventListener(textareaEl, "keydown", (e: KeyboardEvent) => {
@@ -185,15 +202,36 @@ defineExpose({ focus: () => textareaEl.value?.focus() });
         </button>
 
         <!-- Model Name Display (clickable to toggle) -->
-        <button
-          type="button"
-          class="text-copy-xs hover:bg-surface-3 font-mono rounded px-1.5 py-0.5 transition-colors outline-none text-tertiary"
-          :disabled="props.disabled"
-          title="Toggle model"
-          @click="toggleModel"
-        >
-          {{ props.modelName }}
-        </button>
+        <OPopover v-model="showModelPicker">
+          <template #trigger>
+            <button
+              type="button"
+              class="text-copy-xs hover:bg-surface-3 rounded px-1.5 py-0.5 transition-colors outline-none text-tertiary flex items-center gap-1"
+              :disabled="props.disabled"
+              title="Change model"
+            >
+              {{ modelOptions.flatMap(g => g.models).find(m => m.id === props.modelName)?.name || props.modelName }}
+              <ChevronDownIcon class="size-3" />
+            </button>
+          </template>
+          <div class="p-1 w-48">
+            <div v-for="group in modelOptions" :key="group.group" class="mb-1 last:mb-0">
+              <div class="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-tertiary">
+                {{ group.group }}
+              </div>
+              <button
+                v-for="model in group.models"
+                :key="model.id"
+                class="flex w-full items-center justify-between rounded px-2 py-1.5 text-left text-copy-xs transition-colors hover:bg-surface-1"
+                :class="props.modelName === model.id ? 'text-primary' : 'text-secondary'"
+                @click="selectModel(model.id)"
+              >
+                <span>{{ model.name }}</span>
+                <CheckIcon v-if="props.modelName === model.id" class="size-3.5 text-accent" />
+              </button>
+            </div>
+          </div>
+        </OPopover>
       </div>
 
       <div class="flex items-center gap-1.5">

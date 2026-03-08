@@ -73,21 +73,29 @@ export default defineEventHandler(async (event) => {
     generateMessageId: () => generateId(),
     onFinish: async ({ messages: updatedMessages }) => {
       try {
-        // The client sends all prior messages on every turn, so we diff by ID
-        // to avoid duplicates and only write genuinely new messages.
-        const existingIds = new Set(messages.map((m) => m.id));
+        // Find existing message IDs in the database for this project/chat
+        const persistedMessages = await db.query.messages.findMany({
+          where: (m, { and, eq, isNull }) => and(
+            eq(m.projectId, projectId),
+            chatId ? eq(m.chatId, chatId) : isNull(m.chatId)
+          ),
+          columns: { id: true }
+        } as any);
+        const existingIds = new Set(persistedMessages.map((m: any) => m.id));
+
+        // Filter out messages that are already in the DB
         const newMessages = updatedMessages.filter((m) => !existingIds.has(m.id));
 
         if (newMessages.length === 0) return;
 
         await db.insert(messagesTable).values(
-          newMessages.map((m) => ({
+          newMessages.map((m: any) => ({
             id: m.id,
             projectId,
             chatId,
             role: m.role as "user" | "assistant" | "system" | "tool",
             content: m.parts ?? m.content,
-            createdAt: new Date(),
+            createdAt: m.createdAt ? new Date(m.createdAt) : new Date(),
           })),
         );
 
