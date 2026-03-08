@@ -89,15 +89,15 @@ const modelOptions = [
   {
     group: "Anthropic",
     models: [
-      { id: "claude-sonnet-4-6", name: "Claude 3.5 Sonnet" },
-      { id: "claude-opus-4-6", name: "Claude 3 Opus" },
+      { id: "claude-sonnet-4-6", name: "Claude 4.6 Sonnet" },
+      { id: "claude-opus-4-6", name: "Claude 4.6 Opus" },
     ],
   },
   {
     group: "Google",
     models: [
-      { id: "gemini-3.1-pro", name: "Gemini 1.5 Pro" },
-      { id: "gemini-3-flash", name: "Gemini 1.5 Flash" },
+      { id: "gemini-3.1-pro", name: "Gemini 3.1 Pro" },
+      { id: "gemini-3-flash", name: "Gemini 3 Flash" },
     ],
   },
 ];
