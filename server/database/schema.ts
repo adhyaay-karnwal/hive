@@ -140,9 +140,24 @@ export const devProfile = sqliteTable("dev_profile", {
     .$defaultFn(() => new Date()),
 });
 
+export const chats = sqliteTable("chats", {
+  id: text("id").primaryKey(),
+  projectId: text("project_id")
+    .notNull()
+    .references(() => projects.id),
+  title: text("title").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+});
+
 export const messages = sqliteTable("messages", {
   id: text("id").primaryKey(),
   sessionId: text("session_id").references(() => sessions.id),
+  chatId: text("chat_id").references(() => chats.id),
   projectId: text("project_id")
     .notNull()
     .references(() => projects.id),

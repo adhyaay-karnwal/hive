@@ -11,6 +11,7 @@ const { projectId, placeholder } = defineProps<Props>();
 const store = useHiveStore();
 const {
   messages,
+  activeChatId,
   isLoading,
   pendingQuestions,
   connected,
@@ -51,9 +52,30 @@ const scrollArea = useTemplateRef("scrollArea");
 const messageQueue = ref<{ text: string; files: FileUIPart[] }[]>([]);
 const chatInput = useTemplateRef<{ focus: () => void }>("chatInput");
 
-// Auto-dequeue when agent finishes
+// Track the chatId that queued messages belong to, so we never send them
+// to a different chat after a switch.
+const queuedForChatId = ref<string | null>(activeChatId.value);
+
+// Clear message queue when switching chats to prevent queued messages
+// from being sent to the wrong chat session.  This watcher MUST be
+// registered before the isLoading watcher so it runs first when both
+// fire in the same tick (Vue flushes watchers in creation order).
+watch(activeChatId, () => {
+  messageQueue.value = [];
+  queuedForChatId.value = activeChatId.value;
+  stickToBottom.value = true;
+  nextTick(() => scrollToBottom());
+});
+
+// Auto-dequeue when agent finishes — but only if we're still on the
+// same chat that originally queued the messages.
 watch(isLoading, (loading, wasLoading) => {
-  if (wasLoading && !loading && messageQueue.value.length > 0) {
+  if (
+    wasLoading &&
+    !loading &&
+    messageQueue.value.length > 0 &&
+    activeChatId.value === queuedForChatId.value
+  ) {
     const next = messageQueue.value.shift()!;
     sendMessage(next.text, next.files);
   }
@@ -145,7 +167,7 @@ watch(initializing, (val, old) => {
       <div v-else class="mx-auto max-w-3xl">
         <OChatTurn
           v-for="msg in messages"
-          :key="msg.id"
+          :key="`${activeChatId}-${msg.id}`"
           :message="msg"
           :is-working="isLoading && msg === messages[messages.length - 1] && msg.role === 'assistant'"
           @abort="handleAbort"

@@ -2,16 +2,17 @@ import { defineEventHandler, readBody } from "h3";
 import { convertToModelMessages, generateId } from "ai";
 import type { UIMessage } from "ai";
 import { db } from "../database";
-import { projects, messages as messagesTable } from "../database/schema";
+import { projects, chats, messages as messagesTable } from "../database/schema";
 import { buildMainPrompt } from "../services/prompt-builder";
 import { runAgent } from "../services/agent";
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
 
-  const { messages, projectId, model, mode } = body as {
+  const { messages, projectId, chatId, model, mode } = body as {
     messages: UIMessage[];
     projectId: string;
+    chatId?: string;
     model?: "opus" | "sonnet" | "gemini-3.1-pro" | "gemini-3-flash";
     mode?: "build" | "plan";
   };
@@ -31,6 +32,16 @@ export default defineEventHandler(async (event) => {
 
   if (!project) {
     throw createError({ statusCode: 404, message: "Project not found" });
+  }
+
+  // Validate chatId if provided and verify it belongs to the specified project
+  if (chatId) {
+    const chat = await db.query.chats.findFirst({
+      where: { id: chatId },
+    });
+    if (!chat || chat.projectId !== projectId) {
+      throw createError({ statusCode: 404, message: "Chat not found" });
+    }
   }
 
   // Build the system prompt with mode
@@ -73,6 +84,7 @@ export default defineEventHandler(async (event) => {
           newMessages.map((m) => ({
             id: m.id,
             projectId,
+            chatId,
             role: m.role as "user" | "assistant" | "system" | "tool",
             content: m.parts ?? m.content,
             createdAt: new Date(),
