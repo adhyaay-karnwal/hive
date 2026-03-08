@@ -1,24 +1,15 @@
 # TODO
 
 ## Model Selector Updates
-- [ ] Add Gemini as an AI provider
-- [ ] Add Gemini models to the model selector
-- [ ] Add a proper model selector replacing the current toggle
+- [ ] Add a nicer model selector/picker, accounting for different providers
 
 ## Project Selector Updates
 - [ ] Update recent projects to detect hardware projects
 
 ## Chat UI Updates
-- [ ] Remove model changer button from top of chat (unnecessary with model selector)
-- [ ] Remove trash button from top of chat (unnecessary with model selector)
-- [ ] Add new chat button to start new conversations
-- [ ] Add chat history panel to view past conversations
-- [ ] Update database schema to support multiple chats per project
-- [ ] Implement UI for showing chat history and selecting old chats
+- [ ] Enhance UI for showing chat history and selecting old chats
+- [ ] Enhance reopning/starting new sessions (save user prompts to database as well, not just agent actions because currently when reopening chats, the context is missing the users prompts)
+- [ ] For the tool call UI, have the action auto open/expand for when it is HAPPENING. When it is completed then it can close instead of just showing it collapsed when it is first shown. 
 
-## Model Selector Updates
-- [ ] Add Gemini as an AI provider
-- [ ] Add Gemini models to the model selector
-
-## Project Selector Updates
-- [ ] Update recent projects to detect hardware projects
+## File Selector Updates
+- [ ] Implement proper/better file selector AND editor. Have a full and proper UI for opening files, editing them, saving them, etc(incase users want to directly in the app)
