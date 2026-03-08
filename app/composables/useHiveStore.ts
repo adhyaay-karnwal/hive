@@ -220,6 +220,12 @@ export function useHiveStore() {
 
     const isLoading = computed(() => status.value === "streaming" || status.value === "submitted");
 
+    const activeChatTitle = computed(() => {
+      if (!entry.activeChatId.value) return null;
+      const chat = entry.availableChats.value.find(c => c.id === entry.activeChatId.value);
+      return chat?.title || null;
+    });
+
     return {
       // Chat reactivity (delegated to active chat)
       messages,
@@ -229,6 +235,7 @@ export function useHiveStore() {
 
       // Project-level chat state
       activeChatId: entry.activeChatId,
+      activeChatTitle,
       availableChats: entry.availableChats,
 
       // Chat actions
@@ -238,7 +245,7 @@ export function useHiveStore() {
       createChat: async (title?: string) => {
         const newChat = await $fetch<{ id: string; title: string; createdAt: string }>(`/api/projects/${projectId}/chats`, {
           method: "POST",
-          body: { title: title || `Chat ${entry.availableChats.value.length + 1}` }
+          body: { title: title || "New chat" }
         });
         entry.availableChats.value.unshift(newChat);
         await switchChat(projectId, newChat.id);
@@ -249,8 +256,6 @@ export function useHiveStore() {
         await $fetch(`/api/chats/${chatId}`, { method: "DELETE" });
         entry.availableChats.value = entry.availableChats.value.filter((c) => c.id !== chatId);
         // Stop and remove the chat instance before switching to prevent leaks
-        // if switchChat throws, and to avoid getActiveChatEntry() re-creating
-        // a zombie ChatEntry for the deleted chatId during the async gap.
         const deletedEntry = entry.chatInstances.get(chatId);
         if (deletedEntry) {
           deletedEntry.chat.stop();
@@ -262,6 +267,11 @@ export function useHiveStore() {
       },
 
       switchChat: (chatId: string | null) => switchChat(projectId, chatId),
+
+      closeChat: async () => {
+        // Close current chat - switch to main chat (null) without deleting
+        await switchChat(projectId, null);
+      },
 
       clearChat: async () => {
         const chatId = entry.activeChatId.value;
