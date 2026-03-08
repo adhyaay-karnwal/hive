@@ -56,6 +56,7 @@ function cancelEditing() {
 }
 
 async function saveName() {
+  if (!isEditingName.value) return;
   if (editedName.value.trim() && activeChatId.value) {
     // Update the chat title in the availableChats array
     const chatIndex = availableChats.value.findIndex(c => c.id === activeChatId.value);
